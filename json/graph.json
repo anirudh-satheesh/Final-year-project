@@ -1,0 +1,50 @@
+{
+    "HTML": {
+        "prerequisites": [],
+        "level": "beginner",
+        "est_time": "1 week"
+    },
+    "CSS": {
+        "prerequisites": [
+            "HTML"
+        ],
+        "level": "beginner",
+        "est_time": "1 week"
+    },
+    "JavaScript": {
+        "prerequisites": [
+            "HTML",
+            "CSS"
+        ],
+        "level": "intermediate",
+        "est_time": "4 weeks"
+    },
+    "React": {
+        "prerequisites": [
+            "JavaScript"
+        ],
+        "level": "intermediate",
+        "est_time": "8 weeks"
+    },
+    "Node.js": {
+        "prerequisites": [
+            "JavaScript"
+        ],
+        "level": "advanced",
+        "est_time": "12 weeks"
+    },
+    "Express": {
+        "prerequisites": [
+            "Node.js"
+        ],
+        "level": "advanced",
+        "est_time": "16 weeks"
+    },
+    "MongoDB": {
+        "prerequisites": [
+            "Node.js"
+        ],
+        "level": "intermediate",
+        "est_time": "10 weeks"
+    }
+}

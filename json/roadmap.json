@@ -1,0 +1,32 @@
+[
+  {
+    "key": "HTML",
+    "title": "HTML Fundamentals",
+    "description": "Understanding the structure and syntax of HTML",
+    "why_important": "HTML is the foundation of web development",
+    "est_time": 10,
+    "resources": [
+      {"title": "W3Schools HTML Tutorial", "url": "https://www.w3schools.com/html/"}
+    ]
+  },
+  {
+    "key": "CSS",
+    "title": "CSS Basics",
+    "description": "Understanding the syntax and properties of CSS",
+    "why_important": "CSS is essential for styling web pages",
+    "est_time": 15,
+    "resources": [
+      {"title": "MDN Web Docs CSS", "url": "https://developer.mozilla.org/en-US/docs/Learn/CSS"}
+    ]
+  },
+  {
+    "key": "JavaScript",
+    "title": "JavaScript Fundamentals",
+    "description": "Understanding the syntax and concepts of JavaScript",
+    "why_important": "JavaScript is a crucial skill for web development",
+    "est_time": 25,
+    "resources": [
+      {"title": "Codecademy JavaScript Course", "url": "https://www.codecademy.com/learn/introduction-to-javascript"}
+    ]
+  }
+]

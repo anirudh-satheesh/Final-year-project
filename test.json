@@ -1,0 +1,77 @@
+{
+	"Understand Basic Science": {
+		"prerequisite": null,
+		"level": "beginner",
+		"est_time": "2 weeks"
+	},
+	"Mathematics Fundamentals": {
+		"prerequisite": "Understand Basic Science",
+		"level": "beginner",
+		"est_time": "3 weeks"
+	},
+	"Introduction to Physics": {
+		"prerequisite": "Mathematics Fundamentals",
+		"level": "beginner",
+		"est_time": "2 weeks"
+	},
+	"Physical Fitness Basics": {
+		"prerequisite": "Introduction to Physics",
+		"level": "beginner",
+		"est_time": "1 month"
+	},
+	"Space Exploration History": {
+		"prerequisite": "Physical Fitness Basics",
+		"level": "beginner",
+		"est_time": "1 week"
+	},
+	"Engineering Principles": {
+		"prerequisite": "Space Exploration History",
+		"level": "intermediate",
+		"est_time": "2 months"
+	},
+	"Astronaut Training Overview": {
+		"prerequisite": "Engineering Principles",
+		"level": "intermediate",
+		"est_time": "1 month"
+	},
+	"Advanced Physics Concepts": {
+		"prerequisite": "Astronaut Training Overview",
+		"level": "intermediate",
+		"est_time": "1.5 months"
+	},
+	"Computer Science Basics": {
+		"prerequisite": "Advanced Physics Concepts",
+		"level": "intermediate",
+		"est_time": "1 month"
+	},
+	"Aerodynamics and Flight": {
+		"prerequisite": "Computer Science Basics",
+		"level": "advanced",
+		"est_time": "2 months"
+	},
+	"Pilot Training": {
+		"prerequisite": "Aerodynamics and Flight",
+		"level": "advanced",
+		"est_time": "3 months"
+	},
+	"Spacecraft Systems": {
+		"prerequisite": "Pilot Training",
+		"level": "advanced",
+		"est_time": "2 months"
+	},
+	"Psychological Resilience": {
+		"prerequisite": "Spacecraft Systems",
+		"level": "advanced",
+		"est_time": "1 month"
+	},
+	"Language Skills": {
+		"prerequisite": "Psychological Resilience",
+		"level": "advanced",
+		"est_time": "1 month"
+	},
+	"Mission Planning": {
+		"prerequisite": "Language Skills",
+		"level": "advanced",
+		"est_time": "2 months"
+	}
+}
