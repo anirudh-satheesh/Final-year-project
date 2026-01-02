@@ -1,52 +1,60 @@
-import { useState } from 'react'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState } from 'react';
+import HomePage from './src/pages/HomePage';
+import AssessmentPage from './src/pages/AssessmentPage';
+import RoadmapPage from './src/pages/RoadmapPage';
+import LessonPage from './src/pages/LessonPage';
+import DashboardPage from './src/pages/DashboardPage';
 
 function App() {
-  const [input, setInput] = useState('')
-  const [roadmap, setRoadmap] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [currentSubject, setCurrentSubject] = useState('');
+  const [userSkills, setUserSkills] = useState({});
+  const [roadmapData, setRoadmapData] = useState(null);
 
-  const generateRoadmap = async () => {
-    if (!input.trim()) return
-    
-    setLoading(true)
-    try {
-      const response = await fetch('http://localhost:3000/api/roadmap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject: input })
-      })
-      
-      const data = await response.json()
-      setRoadmap(JSON.stringify(data, null, 2))
-    } catch (error) {
-      console.error('Error:', error)
-      setRoadmap('Error generating roadmap. Please try again.')
-    }
-    setLoading(false)
-  }
+  const handleAssessmentComplete = (skills, data) => {
+    setUserSkills(skills);
+    setRoadmapData(data);
+  };
 
   return (
-    <div className="container">
-      <h1>AI Roadmap Generator</h1>
-      <textarea 
-        placeholder="Enter a topic (e.g., Learn Python, Master Machine Learning, Web Development)"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-      />
-      <button onClick={generateRoadmap} disabled={loading}>
-        {loading ? 'Generating...' : 'Generate Roadmap'}
-      </button>
-      
-      {roadmap && (
-        <div className="roadmap-output">
-          <h2>Your Roadmap:</h2>
-          <pre>{roadmap}</pre>
-        </div>
-      )}
-    </div>
-  )
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <HomePage
+                currentSubject={currentSubject}
+                setCurrentSubject={setCurrentSubject}
+              />
+            }
+          />
+          <Route
+            path="/assessment"
+            element={
+              <AssessmentPage
+                currentSubject={currentSubject}
+                onComplete={handleAssessmentComplete}
+              />
+            }
+          />
+          <Route
+            path="/roadmap"
+            element={
+              <RoadmapPage
+                roadmapData={roadmapData}
+                userSkills={userSkills}
+                setUserSkills={setUserSkills}
+                currentSubject={currentSubject}
+              />
+            }
+          />
+          <Route path="/lesson/:topicId" element={<LessonPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+        </Routes>
+      </div>
+    </Router>
+  );
 }
 
-export default App
-
+export default App;

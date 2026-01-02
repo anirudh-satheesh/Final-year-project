@@ -1,0 +1,590 @@
+import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ReactFlow, Controls, Background } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import NodeDetailPanel from '../components/NodeDetailPanel';
+import SkillAssessmentForm from '../components/SkillAssessmentForm';
+
+const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject }) => {
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [showSkillAssessment, setShowSkillAssessment] = useState(!Object.keys(userSkills).length);
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
+  const navigate = useNavigate();
+
+  // Convert roadmap data to React Flow format with better layout
+  const processRoadmapData = useCallback((data) => {
+    console.log('🔵 [ROADMAP] processRoadmapData called with:', JSON.stringify(data, null, 2));
+    
+    if (!data) {
+      console.warn('⚠️ [ROADMAP] data is null/undefined');
+      return { nodes: [], edges: [] };
+    }
+
+    // Handle roadmap format from backend (title, description, items)
+    if (data.items && Array.isArray(data.items)) {
+      console.log('✅ [ROADMAP] Detected roadmap format with items array');
+      console.log('📊 [ROADMAP] Items count:', data.items.length);
+      
+      const flowNodes = data.items.map((item, index) => {
+        console.log(`📋 [ROADMAP] Processing item ${index + 1}:`, item.title);
+        
+        // Better layout algorithm - vertical flow with horizontal spacing
+        const row = Math.floor(index / 2);
+        const col = index % 2;
+        
+        return {
+          id: item.id.toString(),
+          type: 'default',
+          position: {
+            x: col * 350 + 100,
+            y: row * 200 + 100
+          },
+          data: {
+            label: item.title,
+            difficulty: item.difficulty,
+            description: item.description,
+            skills: userSkills[item.id] || 0,
+            estimatedTime: item.estimatedTime
+          },
+          style: {
+            background: getNodeBackground(item.difficulty),
+            color: '#ffffff',
+            border: '2px solid',
+            borderColor: getNodeBorderColor(item.difficulty),
+            borderRadius: '16px',
+            padding: '20px',
+            fontSize: '15px',
+            fontWeight: '700',
+            minWidth: '220px',
+            textAlign: 'center',
+            boxShadow: getNodeShadow(item.difficulty),
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            cursor: 'pointer'
+          }
+        };
+      });
+
+      const flowEdges = data.items.slice(0, -1).map((item, index) => ({
+        id: `e${item.id}-${data.items[index + 1].id}`,
+        source: item.id.toString(),
+        target: data.items[index + 1].id.toString(),
+        type: 'smoothstep',
+        animated: true,
+        style: { 
+          stroke: '#3f3f46', 
+          strokeWidth: 2.5,
+          strokeDasharray: '5,5'
+        },
+        markerEnd: { 
+          type: 'arrowclosed', 
+          color: '#3f3f46',
+          width: 20,
+          height: 20
+        }
+      }));
+      
+      console.log('✅ [ROADMAP] Processed roadmap format successfully');
+      console.log('📊 [ROADMAP] Generated nodes:', flowNodes.length);
+      console.log('📊 [ROADMAP] Generated edges:', flowEdges.length);
+      
+      return { nodes: flowNodes, edges: flowEdges };
+    }
+
+    // Handle graph format (nodes, edges) - fallback for other endpoints
+    if (data.nodes && Array.isArray(data.nodes)) {
+      console.log('✅ [ROADMAP] Detected graph format with nodes array');
+      console.log('📊 [ROADMAP] Nodes count:', data.nodes.length);
+      
+      const flowNodes = data.nodes.map((node, index) => {
+        const row = Math.floor(index / 2);
+        const col = index % 2;
+        
+        return {
+          id: node.id.toString(),
+          type: 'default',
+          position: {
+            x: col * 350 + 100,
+            y: row * 200 + 100
+          },
+          data: {
+            label: node.title || node.data?.label,
+            difficulty: node.difficulty || node.data?.difficulty,
+            description: node.description || node.data?.description,
+            skills: userSkills[node.id] || 0
+          },
+          style: {
+            background: getNodeBackground(node.difficulty || node.data?.difficulty),
+            color: '#ffffff',
+            border: '2px solid',
+            borderColor: getNodeBorderColor(node.difficulty || node.data?.difficulty),
+            borderRadius: '16px',
+            padding: '20px',
+            fontSize: '15px',
+            fontWeight: '700',
+            minWidth: '220px',
+            textAlign: 'center',
+            boxShadow: getNodeShadow(node.difficulty || node.data?.difficulty),
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            cursor: 'pointer'
+          }
+        };
+      });
+
+      const flowEdges = data.edges ? data.edges.map((edge) => ({
+        id: `e${edge.source}-${edge.target}`,
+        source: edge.source.toString(),
+        target: edge.target.toString(),
+        type: 'smoothstep',
+        animated: true,
+        style: { 
+          stroke: '#3f3f46', 
+          strokeWidth: 2.5,
+          strokeDasharray: '5,5'
+        },
+        markerEnd: { 
+          type: 'arrowclosed', 
+          color: '#3f3f46',
+          width: 20,
+          height: 20
+        }
+      })) : [];
+      
+      console.log('✅ [ROADMAP] Processed graph format successfully');
+      console.log('📊 [ROADMAP] Generated nodes:', flowNodes.length);
+      console.log('📊 [ROADMAP] Generated edges:', flowEdges.length);
+
+      return { nodes: flowNodes, edges: flowEdges };
+    }
+
+    // Handle flat object format where keys are topic names
+    const dataKeys = Object.keys(data);
+    if (dataKeys.length > 0 && typeof data[dataKeys[0]] === 'object') {
+      console.log('✅ [ROADMAP] Detected flat object format with topic keys');
+      console.log('📊 [ROADMAP] Topics count:', dataKeys.length);
+      
+      const flowNodes = dataKeys.map((topicName, index) => {
+        const topicData = data[topicName];
+        console.log(`📋 [ROADMAP] Processing topic ${index + 1}:`, topicName);
+        
+        // Better layout algorithm - vertical flow with horizontal spacing
+        const row = Math.floor(index / 2);
+        const col = index % 2;
+        
+        return {
+          id: (index + 1).toString(),
+          type: 'default',
+          position: {
+            x: col * 350 + 100,
+            y: row * 200 + 100
+          },
+          data: {
+            label: topicName,
+            difficulty: topicData.difficulty || topicData.Difficulty || 'beginner',
+            description: topicData.description || topicData.Description || '',
+            skills: userSkills[index + 1] || 0,
+            estimatedTime: topicData.estimatedTime || topicData['Estimated Time']
+          },
+          style: {
+            background: getNodeBackground(topicData.difficulty || topicData.Difficulty || 'beginner'),
+            color: '#ffffff',
+            border: '2px solid',
+            borderColor: getNodeBorderColor(topicData.difficulty || topicData.Difficulty || 'beginner'),
+            borderRadius: '16px',
+            padding: '20px',
+            fontSize: '15px',
+            fontWeight: '700',
+            minWidth: '220px',
+            textAlign: 'center',
+            boxShadow: getNodeShadow(topicData.difficulty || topicData.Difficulty || 'beginner'),
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            cursor: 'pointer'
+          }
+        };
+      });
+
+      // Create sequential edges connecting topics in order
+      const flowEdges = dataKeys.slice(0, -1).map((_, index) => ({
+        id: `e${index + 1}-${index + 2}`,
+        source: (index + 1).toString(),
+        target: (index + 2).toString(),
+        type: 'smoothstep',
+        animated: true,
+        style: { 
+          stroke: '#3f3f46', 
+          strokeWidth: 2.5,
+          strokeDasharray: '5,5'
+        },
+        markerEnd: { 
+          type: 'arrowclosed', 
+          color: '#3f3f46',
+          width: 20,
+          height: 20
+        }
+      }));
+      
+      console.log('✅ [ROADMAP] Processed flat object format successfully');
+      console.log('📊 [ROADMAP] Generated nodes:', flowNodes.length);
+      console.log('📊 [ROADMAP] Generated edges:', flowEdges.length);
+      
+      return { nodes: flowNodes, edges: flowEdges };
+    }
+    
+    // Handle flat object format where keys are topic names
+    const topicKeys = Object.keys(data);
+    if (topicKeys.length > 0 && typeof data[topicKeys[0]] === 'object') {
+      console.log('✅ [ROADMAP] Detected flat object format with topic keys');
+      console.log('📊 [ROADMAP] Topics count:', topicKeys.length);
+      
+      const flowNodes = topicKeys.map((topicName, index) => {
+        const topicData = data[topicName];
+        console.log(`📋 [ROADMAP] Processing topic ${index + 1}:`, topicName);
+        
+        // Better layout algorithm - vertical flow with horizontal spacing
+        const row = Math.floor(index / 2);
+        const col = index % 2;
+        
+        return {
+          id: (index + 1).toString(),
+          type: 'default',
+          position: {
+            x: col * 350 + 100,
+            y: row * 200 + 100
+          },
+          data: {
+            label: topicName,
+            difficulty: topicData.difficulty || topicData.Difficulty || 'beginner',
+            description: topicData.description || topicData.Description || topicData.Overview || '',
+            skills: userSkills[index + 1] || 0,
+            estimatedTime: topicData.estimatedTime || topicData['Estimated Time'] || topicData['Time Required']
+          },
+          style: {
+            background: getNodeBackground(topicData.difficulty || topicData.Difficulty || 'beginner'),
+            color: '#ffffff',
+            border: '2px solid',
+            borderColor: getNodeBorderColor(topicData.difficulty || topicData.Difficulty || 'beginner'),
+            borderRadius: '16px',
+            padding: '20px',
+            fontSize: '15px',
+            fontWeight: '700',
+            minWidth: '220px',
+            textAlign: 'center',
+            boxShadow: getNodeShadow(topicData.difficulty || topicData.Difficulty || 'beginner'),
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            cursor: 'pointer'
+          }
+        };
+      });
+
+      // Create sequential edges connecting topics in order
+      const flowEdges = topicKeys.slice(0, -1).map((_, index) => ({
+        id: `e${index + 1}-${index + 2}`,
+        source: (index + 1).toString(),
+        target: (index + 2).toString(),
+        type: 'smoothstep',
+        animated: true,
+        style: { 
+          stroke: '#3f3f46', 
+          strokeWidth: 2.5,
+          strokeDasharray: '5,5'
+        },
+        markerEnd: { 
+          type: 'arrowclosed', 
+          color: '#3f3f46',
+          width: 20,
+          height: 20
+        }
+      }));
+      
+      console.log('✅ [ROADMAP] Processed flat object format successfully');
+      console.log('📊 [ROADMAP] Generated nodes:', flowNodes.length);
+      console.log('📊 [ROADMAP] Generated edges:', flowEdges.length);
+      
+      return { nodes: flowNodes, edges: flowEdges };
+    }
+    
+    console.warn('⚠️ [ROADMAP] Unknown data format - no items or nodes array found');
+    console.log('📋 [ROADMAP] Data keys:', Object.keys(data));
+    
+    return { nodes: [], edges: [] };
+  }, [userSkills]);
+
+  const getNodeBackground = (difficulty) => {
+    const normalizedDifficulty = difficulty?.toLowerCase()?.trim();
+    
+    console.log('🎨 [COLOR] Input difficulty:', difficulty, '→ Normalized:', normalizedDifficulty);
+    
+    switch (normalizedDifficulty) {
+      case 'beginner': 
+        return 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'; // Indigo to Purple
+      case 'intermediate': 
+        return 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)'; // Pink to Rose
+      case 'advanced': 
+        return 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)'; // Amber to Red
+      default:
+        console.warn('⚠️ [COLOR] Unknown difficulty, using default:', difficulty);
+        return 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)'; // Blue to Cyan
+    }
+  };
+
+  const getNodeBorderColor = (difficulty) => {
+    const normalizedDifficulty = difficulty?.toLowerCase()?.trim();
+    
+    switch (normalizedDifficulty) {
+      case 'beginner': return '#8b5cf6';
+      case 'intermediate': return '#f43f5e';
+      case 'advanced': return '#ef4444';
+      default: return '#06b6d4';
+    }
+  };
+
+  const getNodeShadow = (difficulty) => {
+    const normalizedDifficulty = difficulty?.toLowerCase()?.trim();
+    
+    switch (normalizedDifficulty) {
+      case 'beginner': 
+        return '0 10px 25px -5px rgba(139, 92, 246, 0.3), 0 8px 10px -6px rgba(139, 92, 246, 0.2)';
+      case 'intermediate': 
+        return '0 10px 25px -5px rgba(244, 63, 94, 0.3), 0 8px 10px -6px rgba(244, 63, 94, 0.2)';
+      case 'advanced': 
+        return '0 10px 25px -5px rgba(239, 68, 68, 0.3), 0 8px 10px -6px rgba(239, 68, 68, 0.2)';
+      default: 
+        return '0 10px 25px -5px rgba(6, 182, 212, 0.3), 0 8px 10px -6px rgba(6, 182, 212, 0.2)';
+    }
+  };
+
+  // Update nodes when roadmapData or userSkills change
+  useEffect(() => {
+    console.log('🔵 [ROADMAP] useEffect triggered');
+    console.log('📋 [ROADMAP] roadmapData received:', JSON.stringify(roadmapData, null, 2));
+    console.log('📋 [ROADMAP] userSkills:', JSON.stringify(userSkills, null, 2));
+    
+    const { nodes: newNodes, edges: newEdges } = processRoadmapData(roadmapData);
+    
+    console.log('📊 [ROADMAP] Processed nodes count:', newNodes.length);
+    console.log('📊 [ROADMAP] Processed edges count:', newEdges.length);
+    console.log('📊 [ROADMAP] Setting state with nodes and edges...');
+    
+    setNodes(newNodes);
+    setEdges(newEdges);
+    
+    if (newNodes.length === 0) {
+      console.warn('⚠️ [ROADMAP] No nodes generated! Check the data format.');
+    }
+  }, [roadmapData, userSkills, processRoadmapData]);
+
+  const onNodeClick = (event, node) => {
+    setSelectedNode(node);
+  };
+
+  const handleSkillAssessmentComplete = (skills) => {
+    setUserSkills(skills);
+    setShowSkillAssessment(false);
+  };
+
+  if (!roadmapData) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        
+        <div className="relative z-10 bg-zinc-900 border border-zinc-800 rounded-2xl p-10 max-w-lg w-full text-center">
+          <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-4xl">
+            ⚠️
+          </div>
+          <h2 className="text-3xl font-black text-white mb-4 tracking-tight">No Roadmap Data</h2>
+          <p className="text-zinc-400 mb-8">Please generate a roadmap first to view your learning path.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl 
+                     font-bold hover:shadow-lg hover:shadow-purple-500/50 transition-all transform hover:scale-105"
+          >
+            Go to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showSkillAssessment) {
+    return (
+      <SkillAssessmentForm
+        topics={roadmapData.nodes || []}
+        onComplete={handleSkillAssessmentComplete}
+        onSkip={() => setShowSkillAssessment(false)}
+      />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-950">
+      {/* Header */}
+      <header className="bg-zinc-900/50 backdrop-blur-xl border-b border-zinc-800 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-black text-white tracking-tight mb-1">
+                {currentSubject}
+                <span className="text-zinc-600"> Learning Path</span>
+              </h1>
+              <p className="text-zinc-500 text-sm">Click any node to explore • Drag to navigate</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSkillAssessment(true)}
+                className="px-6 py-3 bg-zinc-800/80 border border-zinc-700 text-zinc-300 rounded-xl 
+                         hover:bg-zinc-700 hover:border-zinc-600 hover:text-white transition-all font-semibold text-sm"
+              >
+                📊 Reassess
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl 
+                         font-bold hover:shadow-lg hover:shadow-purple-500/50 transition-all transform hover:scale-105 text-sm"
+              >
+                ✨ New Path
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex h-[calc(100vh-93px)]">
+        {/* Graph Visualization */}
+        <div className="flex-1 relative">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodeClick={onNodeClick}
+            fitView
+            attributionPosition="bottom-left"
+            className="bg-zinc-950"
+          >
+            <Controls 
+              style={{
+                background: 'rgba(24, 24, 27, 0.8)',
+                border: '1px solid #27272a',
+                borderRadius: '16px',
+                backdropFilter: 'blur(12px)'
+              }}
+              className="[&_button]:bg-zinc-800/80 [&_button]:border-zinc-700 [&_button]:text-zinc-300 [&_button:hover]:bg-zinc-700 [&_button:hover]:text-white"
+            />
+            <Background 
+              variant="dots" 
+              gap={20} 
+              size={1.5}
+              color="#27272a"
+              style={{ background: '#09090b' }}
+            />
+          </ReactFlow>
+
+          {/* Legend */}
+          <div className="absolute bottom-6 right-6 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-5 shadow-2xl">
+            <h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2">
+              <span className="text-lg">🎨</span>
+              Difficulty Levels
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 group cursor-pointer">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform" />
+                <span className="text-zinc-300 text-sm font-medium group-hover:text-white transition-colors">Beginner</span>
+              </div>
+              <div className="flex items-center gap-3 group cursor-pointer">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600 shadow-lg shadow-pink-500/30 group-hover:scale-110 transition-transform" />
+                <span className="text-zinc-300 text-sm font-medium group-hover:text-white transition-colors">Intermediate</span>
+              </div>
+              <div className="flex items-center gap-3 group cursor-pointer">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-amber-500 to-red-600 shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform" />
+                <span className="text-zinc-300 text-sm font-medium group-hover:text-white transition-colors">Advanced</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Node Detail Panel */}
+        {selectedNode && (
+          <NodeDetailPanel
+            node={selectedNode}
+            onClose={() => setSelectedNode(null)}
+            onStartLesson={(topicId) => navigate(`/lesson/${topicId}`)}
+          />
+        )}
+      </div>
+
+      {/* Custom Styles for React Flow with cool animations */}
+      <style jsx global>{`
+        .react-flow__node {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .react-flow__node:hover {
+          transform: scale(1.1) translateY(-5px);
+          z-index: 1000 !important;
+          box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6) !important;
+        }
+        
+        .react-flow__node.selected {
+          transform: scale(1.08);
+          box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.4), 0 20px 40px -10px rgba(168, 85, 247, 0.4) !important;
+          animation: pulse-border 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-border {
+          0%, 100% {
+            box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.4), 0 20px 40px -10px rgba(168, 85, 247, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 0 6px rgba(168, 85, 247, 0.6), 0 20px 40px -10px rgba(168, 85, 247, 0.6);
+          }
+        }
+
+        .react-flow__edge-path {
+          transition: all 0.3s ease;
+        }
+
+        .react-flow__edge:hover .react-flow__edge-path {
+          stroke: #a855f7 !important;
+          stroke-width: 3.5 !important;
+          filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.6));
+        }
+
+        .react-flow__edge.animated .react-flow__edge-path {
+          stroke-dasharray: 5;
+          animation: dashdraw 0.5s linear infinite;
+        }
+
+        @keyframes dashdraw {
+          to {
+            stroke-dashoffset: -10;
+          }
+        }
+
+        .react-flow__controls {
+          box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .react-flow__controls button {
+          transition: all 0.2s ease;
+        }
+
+        .react-flow__controls button:hover {
+          transform: scale(1.1);
+        }
+
+        .react-flow__attribution {
+          background: rgba(24, 24, 27, 0.8) !important;
+          border: 1px solid #27272a !important;
+          padding: 4px 10px !important;
+          border-radius: 8px !important;
+          color: #52525b !important;
+          font-size: 10px !important;
+          backdrop-filter: blur(12px);
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default RoadmapPage;
