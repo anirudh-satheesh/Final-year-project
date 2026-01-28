@@ -95,12 +95,20 @@ function normalizeRoadmapData(rawData, subject) {
 }
 
 // 🔹 Single helper function to talk to Ollama
-async function askLLM(prompt, model = "llama3.2:latest") {
-  const res = await ollama.chat({
-    model,
-    temperature: 0,
-    messages: [{ role: "user", content: prompt }],
-  });
+async function askLLM(prompt, model = process.env.LLM_MODEL || "llama3.2:latest") {
+  let res;
+  try {
+    res = await ollama.chat({
+      model,
+      temperature: 0,
+      messages: [{ role: "user", content: prompt }],
+    });
+  } catch (err) {
+    if (err.cause && err.cause.code === 'ECONNREFUSED') {
+      throw new Error("Ollama is not running. Please start it with 'ollama serve'.");
+    }
+    throw err;
+  }
 
   let output = res.message.content;
 
@@ -500,6 +508,7 @@ app.post("/api/lesson", async (req, res) => {
   }
 });
 
-app.listen(3000, () =>
-  console.log("🚀 Server running on http://localhost:3000")
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
 );
