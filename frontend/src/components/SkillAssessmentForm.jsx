@@ -47,8 +47,8 @@ const SkillAssessmentForm = ({ topics, onComplete, onSkip }) => {
     setScore(correctCount);
     setSubmitted(true);
 
-    // Calculate skill level based on score
-    const skillValue = correctCount * 20; // 0-100 scale
+    // Calculate skill level based on score (normalized to 0-1)
+    const skillValue = correctCount / questions.length;
 
     // Create skills object for all topics
     const skills = {};
@@ -94,7 +94,7 @@ const SkillAssessmentForm = ({ topics, onComplete, onSkip }) => {
           <h2 className="text-3xl font-black text-white mb-4 tracking-tight">
             Assessment Complete!
           </h2>
-          
+
           <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 mb-6">
             <div className="text-6xl font-black mb-2">
               <span className={`bg-gradient-to-r ${getLevelColor(score)} bg-clip-text text-transparent`}>
@@ -102,7 +102,7 @@ const SkillAssessmentForm = ({ topics, onComplete, onSkip }) => {
               </span>
             </div>
             <div className="text-zinc-400 mb-4">Correct Answers</div>
-            
+
             <div className={`inline-block px-6 py-2 bg-gradient-to-r ${getLevelColor(score)} rounded-full`}>
               <span className="text-white font-bold text-lg">{getLevel(score)}</span>
             </div>
@@ -130,7 +130,7 @@ const SkillAssessmentForm = ({ topics, onComplete, onSkip }) => {
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
-      
+
       <div className="relative z-10 bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-3xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
@@ -150,7 +150,7 @@ const SkillAssessmentForm = ({ topics, onComplete, onSkip }) => {
             <span>{answers.filter(a => a !== null).length}/{questions.length} answered</span>
           </div>
           <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-purple-500 to-pink-600 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
@@ -160,24 +160,23 @@ const SkillAssessmentForm = ({ topics, onComplete, onSkip }) => {
         {/* Questions */}
         <div className="space-y-6 mb-8">
           {questions.map((q, qIndex) => (
-            <div 
-              key={qIndex} 
+            <div
+              key={qIndex}
               className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 hover:border-zinc-700 transition-all"
             >
               <h3 className="text-white font-bold mb-4 text-lg">
                 <span className="text-purple-400 mr-2">{qIndex + 1}.</span>
                 {q.question}
               </h3>
-              
+
               <div className="space-y-3">
                 {q.options.map((option, oIndex) => (
-                  <label 
-                    key={oIndex} 
-                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      answers[qIndex] === oIndex
+                  <label
+                    key={oIndex}
+                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${answers[qIndex] === oIndex
                         ? 'border-purple-500 bg-purple-500/10'
                         : 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900'
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"

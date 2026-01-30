@@ -1,13 +1,13 @@
 import ollama from 'ollama';
 
-import graphPrompt from './prompts/graphPrompt.js';
-import topoSort from './utils/topoSort.js';
-import roadmapPrompt from './prompts/roadmapPrompt.js';
+import graphPrompt from '../prompts/graphPrompt.js';
+import topoSort from '../utils/topoSort.js';
+import roadmapPrompt from '../prompts/roadmapPrompt.js';
 
 
 async function askLLM(prompt) {
   const res = await ollama.chat({
-    model: 'llama3.2',
+    model: 'llama3.2:latest',
     temperature: 0,
     messages: [
       { role: 'user', content: prompt }
@@ -31,7 +31,7 @@ async function askLLM(prompt) {
 
 
 
- const graph = {
+const graph = {
   "Web Development Basics": {
     "prerequisites": [],
     "level": "beginner",
@@ -93,9 +93,9 @@ async function askLLM(prompt) {
     "est_time": "5 weeks"
   }
 }
- const userSkills = {
-	"HTML": 0.8
-  }
+const userSkills = {
+  "HTML": 0.8
+}
 
 // Decide needed topics
 const needed = Object.keys(graph).filter(t => (userSkills[t] || 0) < 0.6);

@@ -80,6 +80,6 @@ npm run build      # Build for production
 ## Tech Stack
 - **Frontend**: React 18, Vite, CSS3
 - **Backend**: Node.js, Express, CORS
-- **AI**: Ollama (local LLM inference)
+- **AI**: Ollama with llama3.2:latest (local LLM inference)
 - **Utilities**: Python (graph algorithms)
 

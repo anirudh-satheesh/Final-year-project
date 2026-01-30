@@ -5,52 +5,67 @@ import LoadingComponent from '../components/LoadingComponent';
 
 const AssessmentPage = ({ currentSubject, onComplete }) => {
   const [step, setStep] = useState('intro'); // intro, assessment, loading
-  const [answers, setAnswers] = useState(Array(5).fill(null));
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [isFetchingQuestions, setIsFetchingQuestions] = useState(false);
   const navigate = useNavigate();
 
-  const questions = [
-    {
-      question: "What does CPU stand for?",
-      options: ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Computer Processing Unit"],
-      correct: 0
-    },
-    {
-      question: "What is the binary representation of the decimal number 10?",
-      options: ["1010", "1001", "1100", "1110"],
-      correct: 0
-    },
-    {
-      question: "Which of the following is a programming paradigm that focuses on objects and classes?",
-      options: ["Functional Programming", "Object-Oriented Programming", "Procedural Programming", "Logic Programming"],
-      correct: 1
-    },
-    {
-      question: "What does HTML stand for?",
-      options: ["HyperText Markup Language", "HighText Machine Language", "HyperText Machine Learning", "HighText Markup Language"],
-      correct: 0
-    },
-    {
-      question: "In computer science, what does 'recursion' refer to?",
-      options: ["A loop that runs forever", "A function that calls itself", "A type of data structure", "A sorting algorithm"],
-      correct: 1
-    }
-  ];
+  useEffect(() => {
+    let isCancelled = false;
+
+    const fetchQuestions = async () => {
+      if (!currentSubject) return;
+
+      setIsFetchingQuestions(true);
+      try {
+        const data = await apiService.getAssessment(currentSubject);
+        if (!isCancelled && data && data.questions) {
+          setQuestions(data.questions);
+          setAnswers(Array(data.questions.length).fill(null));
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error('❌ [ASSESSMENT] Failed to fetch questions:', err);
+        }
+        // Fallback or error handling
+      } finally {
+        if (!isCancelled) {
+          setIsFetchingQuestions(false);
+        }
+      }
+    };
+
+    fetchQuestions();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentSubject]);
 
   const handleStartAssessment = () => {
     setStep('assessment');
+    setCurrentQuestionIndex(0);
   };
 
-  const handleAnswerChange = (questionIndex, optionIndex) => {
+  const handleAnswerChange = (optionIndex) => {
     const newAnswers = [...answers];
-    newAnswers[questionIndex] = optionIndex;
+    newAnswers[currentQuestionIndex] = optionIndex;
     setAnswers(newAnswers);
+
+    // Auto-advance after a short delay
+    if (currentQuestionIndex < questions.length - 1) {
+      setTimeout(() => {
+        setCurrentQuestionIndex(prev => prev + 1);
+      }, 400);
+    }
   };
 
   const handleSubmit = async () => {
     console.log('🔵 [ASSESSMENT] handleSubmit called');
-    
+
     let correctCount = 0;
     answers.forEach((answer, index) => {
       if (answer === questions[index].correct) correctCount++;
@@ -58,39 +73,30 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
     setScore(correctCount);
     setSubmitted(true);
 
-    // Calculate skill level based on score (0-100 scale)
-    const skillValue = correctCount * 20; // 0-100 scale
-    
-    // Convert to 0-1 scale for NodeDetailPanel compatibility
-    const normalizedSkillValue = skillValue / 100;
-
-    // Create skills object with a default level for the subject
+    const normalizedSkillValue = correctCount / questions.length;
     const userSkills = {
       [currentSubject]: normalizedSkillValue
     };
-    
-    console.log('📋 [ASSESSMENT] User skills calculated:', userSkills);
-    console.log('🔵 [ASSESSMENT] Step changing to loading...');
 
-    // Generate personalized roadmap with user skills
-    setStep('loading');
+    // We don't set step to 'loading' here because 'submitted' state handles the UI
+    // setStep('loading');
+
+    console.log('🔵 [ASSESSMENT] preparing to call generateRoadmap');
+    console.log('🔵 [ASSESSMENT] Subject:', currentSubject);
+    console.log('🔵 [ASSESSMENT] Skills:', JSON.stringify(userSkills));
+
     try {
-      console.log('🔵 [ASSESSMENT] Calling apiService.generateRoadmap...');
+      console.log('🚀 [ASSESSMENT] Invoking apiService.generateRoadmap...');
       const roadmapData = await apiService.generateRoadmap(currentSubject, userSkills);
-      console.log('✅ [ASSESSMENT] generateRoadmap returned successfully');
-      console.log('📊 [ASSESSMENT] Roadmap data received:', JSON.stringify(roadmapData, null, 2));
-      
+      console.log('✅ [ASSESSMENT] generateRoadmap completed successfully');
+
       onComplete(userSkills, roadmapData);
       navigate('/roadmap');
     } catch (err) {
       console.error('❌ [ASSESSMENT] generateRoadmap failed:', err.message);
-      console.log('🔵 [ASSESSMENT] Trying fallback to generateGraph...');
-      // Fallback to graph generation
       try {
+        console.log('⚠️ [ASSESSMENT] Attempting fallback to generateGraph...');
         const graphData = await apiService.generateGraph(currentSubject);
-        console.log('✅ [ASSESSMENT] generateGraph returned successfully');
-        console.log('📊 [ASSESSMENT] Graph data received:', JSON.stringify(graphData, null, 2));
-        
         onComplete(userSkills, graphData);
         navigate('/roadmap');
       } catch (fallbackErr) {
@@ -101,35 +107,20 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
   };
 
   const handleSkip = async () => {
-    // Skip assessment with default skills (50% - intermediate) converted to 0-1 scale
-    const normalizedSkillValue = 0.5; // 0.5 = 50% = Intermediate
-    
+    const normalizedSkillValue = 0.5;
     const userSkills = {
       [currentSubject]: normalizedSkillValue
     };
-    
-    console.log('🔵 [ASSESSMENT] handleSkip called');
-    console.log('📋 [ASSESSMENT] Using default skills:', userSkills);
-    console.log('🔵 [ASSESSMENT] Step changing to loading...');
 
     setStep('loading');
     try {
-      console.log('🔵 [ASSESSMENT] Calling apiService.generatePersonalizedGraph...');
       const graphData = await apiService.generatePersonalizedGraph(currentSubject, userSkills);
-      console.log('✅ [ASSESSMENT] generatePersonalizedGraph returned successfully');
-      console.log('📊 [ASSESSMENT] Graph data received:', JSON.stringify(graphData, null, 2));
-      
       onComplete(userSkills, graphData);
       navigate('/roadmap');
     } catch (err) {
       console.error('❌ [ASSESSMENT] generatePersonalizedGraph failed:', err.message);
-      console.log('🔵 [ASSESSMENT] Trying fallback to generateGraph...');
-      // Fallback to basic graph generation
       try {
         const fallbackGraph = await apiService.generateGraph(currentSubject);
-        console.log('✅ [ASSESSMENT] generateGraph returned successfully');
-        console.log('📊 [ASSESSMENT] Fallback graph data:', JSON.stringify(fallbackGraph, null, 2));
-        
         onComplete(userSkills, fallbackGraph);
         navigate('/roadmap');
       } catch (fallbackErr) {
@@ -140,14 +131,16 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
   };
 
   const getLevel = (score) => {
-    if (score <= 1) return "Beginner";
-    if (score <= 3) return "Intermediate";
+    const ratio = score / questions.length;
+    if (ratio <= 0.3) return "Beginner";
+    if (ratio <= 0.7) return "Intermediate";
     return "Advanced";
   };
 
   const getLevelColor = (score) => {
-    if (score <= 1) return "from-orange-400 to-red-500";
-    if (score <= 3) return "from-blue-400 to-cyan-500";
+    const ratio = score / questions.length;
+    if (ratio <= 0.3) return "from-orange-400 to-red-500";
+    if (ratio <= 0.7) return "from-blue-400 to-cyan-500";
     return "from-green-400 to-emerald-500";
   };
 
@@ -155,52 +148,66 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
     return <LoadingComponent />;
   }
 
+  // Common background components
+  const Background = () => (
+    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse [animation-delay:2s]" />
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] brightness-50 contrast-150 mix-blend-overlay" />
+      <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:32px_32px]" />
+    </div>
+  );
+
   if (submitted) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+      <div className="min-h-screen bg-[#030303] text-zinc-100 flex items-center justify-center p-6 relative font-sans selection:bg-cyan-500/30 overflow-hidden">
+        <Background />
 
-        <div className="relative z-10 bg-zinc-900 border border-zinc-800 rounded-2xl p-10 max-w-lg w-full text-center">
-          {/* Success Icon */}
-          <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl animate-bounce">
-            ✓
+        <div className="relative z-10 w-full max-w-2xl text-center">
+          {/* Success Ring Animation */}
+          <div className="relative w-32 h-32 mx-auto mb-10">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full blur-2xl opacity-40 animate-pulse" />
+            <div className="relative w-full h-full border-2 border-emerald-500/30 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+              <span className="text-5xl animate-in zoom-in duration-700">✓</span>
+            </div>
+            <div className="absolute -inset-4 border border-emerald-500/10 rounded-full animate-spin-slow" />
           </div>
 
-          <h2 className="text-3xl font-black text-white mb-4 tracking-tight">
-            Assessment Complete!
+          <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-emerald-500/5 border border-emerald-500/20 mb-8">
+            <span className="text-[10px] font-black text-emerald-400 tracking-[0.2em] uppercase leading-none mt-0.5">Assessment Complete</span>
+          </div>
+
+          <h2 className="text-[48px] font-black leading-tight tracking-tight text-white uppercase mb-4">
+            Your <span className="italic font-serif normal-case font-normal text-cyan-400">Level</span> is set.
           </h2>
-          
-          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 mb-6">
-            <div className="text-5xl font-black mb-2">
-              <span className={`bg-gradient-to-r ${getLevelColor(score)} bg-clip-text text-transparent`}>
-                {score}/5
-              </span>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 text-left">
+            <div className="p-8 rounded-3xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm">
+              <div className="text-4xl font-black text-white mb-2 tracking-tight">
+                <span className={`bg-gradient-to-r ${getLevelColor(score)} bg-clip-text text-transparent`}>
+                  {score}/{questions.length}
+                </span>
+              </div>
+              <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest leading-tight">Correct <br />Architectural Responses</div>
             </div>
-            <div className="text-zinc-400 mb-4">Correct Answers</div>
-            
-            <div className={`inline-block px-6 py-2 bg-gradient-to-r ${getLevelColor(score)} rounded-full`}>
-              <span className="text-white font-bold text-lg">{getLevel(score)}</span>
+
+            <div className="p-8 rounded-3xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm flex flex-col justify-center">
+              <div className="text-2xl font-black text-white mb-1 tracking-tight uppercase">
+                {getLevel(score)}
+              </div>
+              <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest leading-tight">Calculated Expertise <br />Tier</div>
             </div>
           </div>
 
-          <p className="text-zinc-400 mb-8 leading-relaxed">
-            Generating your personalized <span className="text-white font-semibold">{currentSubject}</span> roadmap based on your skill level...
+          <p className="text-lg text-zinc-500 font-medium mb-12 max-w-lg mx-auto leading-relaxed">
+            Our Path Architect is now weaving a custom learning journey for <span className="text-white">{currentSubject}</span> based on your specific baseline.
           </p>
 
-          {/* Animated Loading Bars */}
-          <div className="space-y-3">
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full animate-pulse" style={{ width: '100%' }} />
+          <div className="space-y-4">
+            <div className="h-1 bg-zinc-900 rounded-full overflow-hidden w-full max-w-md mx-auto relative border border-zinc-800/50">
+              <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full animate-shimmer" style={{ width: '100%' }} />
             </div>
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full animate-pulse" style={{ width: '75%', animationDelay: '0.2s' }} />
-            </div>
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full animate-pulse" style={{ width: '50%', animationDelay: '0.4s' }} />
-            </div>
+            <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-[0.3em] animate-pulse">Initializing Knowledge Manifest</p>
           </div>
         </div>
       </div>
@@ -208,166 +215,184 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
   }
 
   if (step === 'assessment') {
-    const progress = (answers.filter(a => a !== null).length / questions.length) * 100;
+    const q = questions[currentQuestionIndex];
+    if (!q) return <LoadingComponent />;
+    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
-        
-        <div className="relative z-10 bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-3xl w-full">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Skill Assessment</h2>
-            <p className="text-zinc-400">
-              Testing your knowledge of <span className="text-cyan-400 font-semibold">{currentSubject}</span>
-            </p>
-          </div>
+      <div className="min-h-screen bg-[#030303] text-zinc-100 flex flex-col relative font-sans selection:bg-cyan-500/30 overflow-hidden">
+        <Background />
 
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex justify-between text-sm text-zinc-400 mb-2">
-              <span>Progress</span>
-              <span>{answers.filter(a => a !== null).length}/{questions.length} answered</span>
+        <nav className="fixed top-0 left-0 right-0 z-50 px-8 py-5 border-b border-zinc-800/50 backdrop-blur-xl bg-black/40">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center">
+                <span className="text-white font-black text-xl italic tracking-tighter">S</span>
+              </div>
+              <span className="text-xl font-bold tracking-tight text-white uppercase">Strive</span>
             </div>
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
+
+            <div className="flex items-center gap-6">
+              <div className="text-[10px] font-black text-zinc-600 tracking-[0.2em] uppercase">Step {currentQuestionIndex + 1} of {questions.length}</div>
+              <div className="w-32 h-1 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
+                <div className="h-full bg-cyan-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+              </div>
             </div>
           </div>
+        </nav>
 
-          {/* Questions */}
-          <div className="space-y-6 mb-8">
-            {questions.map((q, qIndex) => (
-              <div 
-                key={qIndex} 
-                className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 hover:border-zinc-700 transition-all"
-              >
-                <h3 className="text-white font-bold mb-4 text-lg">
-                  <span className="text-cyan-400 mr-2">{qIndex + 1}.</span>
+        <main className="flex-1 flex items-center justify-center p-6 relative z-10 pt-24">
+          <div className="w-full max-w-4xl grid lg:grid-cols-[1fr_auto] gap-16 items-start">
+
+            <div className="space-y-12 animate-in fade-in slide-in-from-left-8 duration-700">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-3 px-3 py-1 rounded-lg bg-cyan-500/5 border border-cyan-500/10">
+                  <span className="text-[10px] font-black text-cyan-500 tracking-widest uppercase">Probe {currentQuestionIndex + 1}</span>
+                </div>
+                <h2 className="text-3xl lg:text-5xl font-black leading-tight tracking-tight text-white uppercase">
                   {q.question}
-                </h3>
-                
-                <div className="space-y-3">
-                  {q.options.map((option, oIndex) => (
-                    <label 
-                      key={oIndex} 
-                      className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        answers[qIndex] === oIndex
-                          ? 'border-cyan-500 bg-cyan-500/10'
-                          : 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900'
+                </h2>
+              </div>
+
+              <div className="grid gap-3">
+                {q.options.map((option, oIndex) => (
+                  <button
+                    key={oIndex}
+                    onClick={() => handleAnswerChange(oIndex)}
+                    className={`group flex items-center justify-between p-5 rounded-2xl transition-all duration-300 border text-left
+                                    ${answers[currentQuestionIndex] === oIndex
+                        ? 'bg-cyan-500/10 border-cyan-500 text-white'
+                        : 'bg-zinc-900/40 border-zinc-800/60 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-900/60'
+                      }`}
+                  >
+                    <span className="font-semibold text-sm lg:text-base">{option}</span>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300
+                                    ${answers[currentQuestionIndex] === oIndex
+                        ? 'border-cyan-500 bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                        : 'border-zinc-700 group-hover:border-zinc-500'
                       }`}
                     >
-                      <input
-                        type="radio"
-                        name={`question-${qIndex}`}
-                        value={oIndex}
-                        checked={answers[qIndex] === oIndex}
-                        onChange={() => handleAnswerChange(qIndex, oIndex)}
-                        className="w-5 h-5 text-cyan-500 bg-zinc-950 border-zinc-700 focus:ring-cyan-500 focus:ring-offset-zinc-950"
-                      />
-                      <span className="ml-3 text-zinc-300">{option}</span>
-                    </label>
-                  ))}
+                      {answers[currentQuestionIndex] === oIndex && <span className="text-[10px] text-black font-black">✓</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between pt-4">
+                <button
+                  onClick={handleSkip}
+                  className="text-xs font-bold text-zinc-600 hover:text-white transition-colors uppercase tracking-widest"
+                >
+                  Skip Assessment
+                </button>
+
+                <div className="flex gap-3">
+                  {currentQuestionIndex > 0 && (
+                    <button
+                      onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
+                      className="px-6 py-3 bg-zinc-900 text-zinc-400 font-bold border border-zinc-800 rounded-xl hover:text-white hover:border-zinc-700 transition-all uppercase text-[10px] tracking-widest"
+                    >
+                      Previous
+                    </button>
+                  )}
+                  {currentQuestionIndex === questions.length - 1 && answers[currentQuestionIndex] !== null && (
+                    <button
+                      onClick={handleSubmit}
+                      className="px-8 py-3 bg-zinc-100 text-black font-black rounded-xl hover:bg-cyan-400 transition-all shadow-lg uppercase text-[10px] tracking-widest"
+                    >
+                      Submit Final
+                    </button>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-4">
-            <button
-              onClick={handleSubmit}
-              disabled={answers.includes(null)}
-              className="flex-1 px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl 
-                       font-bold hover:shadow-lg hover:shadow-cyan-500/50 disabled:opacity-50 
-                       disabled:cursor-not-allowed disabled:hover:shadow-none transition-all transform hover:scale-105 disabled:hover:scale-100"
-            >
-              Submit & Generate Roadmap →
-            </button>
-            <button
-              onClick={handleSkip}
-              className="px-6 py-4 border-2 border-zinc-700 text-zinc-300 rounded-xl font-bold 
-                       hover:bg-zinc-800 hover:border-zinc-600 transition-all"
-            >
-              Skip
-            </button>
+            <div className="hidden lg:block w-72 space-y-8 sticky top-32">
+              <div className="p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm space-y-4">
+                <div className="w-10 h-10 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400">🧠</div>
+                <div>
+                  <p className="text-[10px] font-black text-white uppercase tracking-wider mb-1">Baseline Analysis</p>
+                  <p className="text-xs text-zinc-500 leading-relaxed">Each response refines the neural weights of your learning graph.</p>
+                </div>
+              </div>
+
+              <div className="px-6 space-y-2">
+                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em]">Current Subject</p>
+                <p className="text-xl font-black text-white italic font-serif ">{currentSubject}</p>
+              </div>
+            </div>
+
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
-  // Intro step
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
-      <div className="absolute top-1/3 left-1/3 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/3 right-1/3 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+    <div className="min-h-screen bg-[#030303] text-zinc-100 flex items-center justify-center p-6 relative font-sans selection:bg-cyan-500/30 overflow-hidden">
+      <Background />
 
-      <div className="relative z-10 bg-zinc-900 border border-zinc-800 rounded-2xl p-10 max-w-lg w-full text-center">
-        {/* Icon */}
-        <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-4xl">
-          📝
-        </div>
+      <div className="relative z-10 w-full max-w-5xl grid lg:grid-cols-2 gap-16 xl:gap-24 items-center">
 
-        <h2 className="text-3xl font-black text-white mb-4 tracking-tight">
-          Skill Assessment
-        </h2>
-        <p className="text-zinc-400 mb-8 leading-relaxed">
-          Let's assess your current knowledge of <span className="text-white font-semibold">{currentSubject}</span> to create a perfectly tailored learning roadmap for you.
-        </p>
-
-        {/* Features */}
-        <div className="space-y-4 mb-8 text-left">
-          <div className="flex items-start gap-4 bg-zinc-950 border border-zinc-800 rounded-xl p-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold">
-              1
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-1">Answer 5 Questions</h3>
-              <p className="text-zinc-400 text-sm">Quick multiple-choice questions about {currentSubject}</p>
-            </div>
+        <div className="space-y-12 animate-in fade-in slide-in-from-left-8 duration-1000">
+          <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-cyan-500/5 border border-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+            </span>
+            <span className="text-[10px] font-black text-cyan-400 tracking-[0.2em] uppercase leading-none mt-0.5">Objective Validation</span>
           </div>
 
-          <div className="flex items-start gap-4 bg-zinc-950 border border-zinc-800 rounded-xl p-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold">
-              2
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-1">Get Your Level</h3>
-              <p className="text-zinc-400 text-sm">We'll determine if you're a beginner, intermediate, or advanced</p>
-            </div>
+          <div className="space-y-6">
+            <h1 className="text-[56px] xl:text-[76px] font-black leading-[0.95] tracking-tight text-white uppercase">
+              Quantify <br />
+              <span className="italic font-serif normal-case font-normal text-cyan-400">Baseline</span>
+            </h1>
+            <p className="text-lg text-zinc-400 max-w-lg leading-relaxed font-medium">
+              To build the perfect path, we must understand your current coordinates. A brief assessment ensures you don't waste time on mastered concepts.
+            </p>
           </div>
 
-          <div className="flex items-start gap-4 bg-zinc-950 border border-zinc-800 rounded-xl p-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold">
-              3
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-1">Personalized Roadmap</h3>
-              <p className="text-zinc-400 text-sm">Receive a custom learning path matched to your skill level</p>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={handleStartAssessment}
+              disabled={isFetchingQuestions || questions.length === 0}
+              className="px-10 py-4 bg-zinc-100 text-black font-black rounded-2xl hover:bg-cyan-400 transition-all active:scale-95 shadow-xl shadow-cyan-500/10 uppercase tracking-widest text-xs disabled:opacity-50"
+            >
+              {isFetchingQuestions ? 'Preparing Assessment...' : 'Begin Assessment'}
+            </button>
+            <button
+              onClick={handleSkip}
+              className="px-10 py-4 bg-zinc-900 text-white font-bold border border-zinc-800 rounded-2xl hover:border-zinc-700 transition-all active:scale-95 uppercase tracking-widest text-xs"
+            >
+              Skip & Start Learning
+            </button>
           </div>
         </div>
 
-        {/* Buttons */}
-        <button
-          onClick={handleStartAssessment}
-          className="w-full px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl 
-                   font-bold hover:shadow-lg hover:shadow-cyan-500/50 transition-all transform hover:scale-105 mb-3"
-        >
-          Start Assessment
-        </button>
-        <button
-          onClick={handleSkip}
-          className="w-full px-6 py-4 text-zinc-400 hover:text-white font-medium transition-colors"
-        >
-          Skip and use default level
-        </button>
+        <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
+          <div className="absolute -inset-10 bg-gradient-to-tr from-cyan-500/10 via-transparent to-blue-500/10 rounded-[60px] blur-3xl" />
+
+          <div className="relative grid grid-cols-1 gap-4">
+            {[
+              { title: "Precision Mapping", desc: "Determines starting point in the knowledge graph.", icon: "🎯" },
+              { title: "Efficiency Loop", desc: "Bypasses existing expertise to accelerate mastery.", icon: "⚡" },
+              { title: "Tier Calibration", desc: "Selects appropriate depth based on your persona.", icon: "📉" }
+            ].map((feature, i) => (
+              <div key={i} className="group p-8 rounded-3xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm hover:border-cyan-500/30 transition-all">
+                <div className="flex gap-6 items-center">
+                  <div className="w-14 h-14 bg-zinc-950 rounded-2xl flex items-center justify-center text-2xl border border-zinc-800 transition-colors group-hover:border-cyan-500/20">
+                    {feature.icon}
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider">{feature.title}</h3>
+                    <p className="text-xs text-zinc-500 font-medium leading-relaxed">{feature.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

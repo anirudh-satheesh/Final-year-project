@@ -13,33 +13,148 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
   const navigate = useNavigate();
 
   // Convert roadmap data to React Flow format with better layout
+  // Convert roadmap data to React Flow format with better layout
   const processRoadmapData = useCallback((data) => {
-    console.log('🔵 [ROADMAP] processRoadmapData called with:', JSON.stringify(data, null, 2));
-    
-    if (!data) {
-      console.warn('⚠️ [ROADMAP] data is null/undefined');
-      return { nodes: [], edges: [] };
+    console.log('🔵 [ROADMAP] processRoadmapData called');
+
+    if (!data) return { nodes: [], edges: [] };
+
+    // Priority 1: Use pre-calculated graph format from backend (Tree Structure)
+    if (data.nodes && Array.isArray(data.nodes) && data.edges && Array.isArray(data.edges)) {
+      console.log('✅ [ROADMAP] Using backend-calculated tree graph');
+
+      const flowNodes = data.nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          skills: userSkills[node.id] || 0
+        }
+      }));
+
+      return { nodes: flowNodes, edges: data.edges };
     }
 
-    // Handle roadmap format from backend (title, description, items)
+    // Priority 2: Process key-value pair format (e.g., { "Topic": { prerequisite, level, est_time } })
+    const isKeyValueFormat = Object.keys(data).length > 0 &&
+      typeof Object.values(data)[0] === 'object' &&
+      Object.values(data)[0] !== null &&
+      !Array.isArray(Object.values(data)[0]) &&
+      ('level' in Object.values(data)[0]);
+
+    if (isKeyValueFormat) {
+      console.log('✅ [ROADMAP] Processing key-value pair roadmap data');
+
+      const flowNodes = [];
+      const flowEdges = [];
+      const topics = Object.keys(data);
+
+      // Map topics to their dependencies for layout calculation
+      const adj = {};
+      const levels = {}; // To store vertical level in layout
+
+      topics.forEach(topic => {
+        const prereq = data[topic].prerequisite;
+        if (prereq) {
+          if (!adj[prereq]) adj[prereq] = [];
+          adj[prereq].push(topic);
+        }
+      });
+
+      // Simple BFS/DFS to determine levels for layout
+      const queue = topics.filter(t => !data[t].prerequisite).map(t => ({ topic: t, lvl: 0 }));
+      const visited = new Set();
+
+      while (queue.length > 0) {
+        const { topic, lvl } = queue.shift();
+        if (visited.has(topic)) continue;
+        visited.add(topic);
+        levels[topic] = lvl;
+
+        if (adj[topic]) {
+          adj[topic].forEach(next => {
+            queue.push({ topic: next, lvl: lvl + 1 });
+          });
+        }
+      }
+
+      // Track number of nodes at each level for horizontal centering
+      const nodesPerLevel = {};
+      topics.forEach(t => {
+        const lvl = levels[t] || 0;
+        nodesPerLevel[lvl] = (nodesPerLevel[lvl] || 0) + 1;
+      });
+
+      const levelCurrentCount = {};
+
+      topics.forEach((topic, index) => {
+        const nodeData = data[topic];
+        const lvl = levels[topic] || 0;
+        const countAtLevel = nodesPerLevel[lvl];
+        const indexAtLevel = levelCurrentCount[lvl] || 0;
+        levelCurrentCount[lvl] = indexAtLevel + 1;
+
+        // Position nodes: Y based on level, X centered horizontally
+        const xPos = (indexAtLevel - (countAtLevel - 1) / 2) * 450 + 400;
+        const yPos = lvl * 350 + 100;
+
+        flowNodes.push({
+          id: topic,
+          type: 'default',
+          position: { x: xPos, y: yPos },
+          sourcePosition: 'bottom',
+          targetPosition: 'top',
+          data: {
+            label: topic,
+            difficulty: nodeData.level,
+            description: `Estimated time: ${nodeData.est_time}`,
+            skills: userSkills[topic] || 0,
+            estimatedTime: nodeData.est_time
+          },
+          style: {
+            background: getNodeBackground(nodeData.level),
+            color: '#ffffff',
+            border: '2px solid',
+            borderColor: getNodeBorderColor(nodeData.level),
+            borderRadius: '24px',
+            padding: '20px',
+            fontSize: '15px',
+            fontWeight: '700',
+            minWidth: '220px',
+            textAlign: 'center',
+            boxShadow: getNodeShadow(nodeData.level),
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            cursor: 'pointer'
+          }
+        });
+
+        if (nodeData.prerequisite) {
+          flowEdges.push({
+            id: `e-${nodeData.prerequisite}-${topic}`,
+            source: nodeData.prerequisite,
+            target: topic,
+            type: 'smoothstep',
+            animated: false,
+            style: { stroke: '#3f3f46', strokeWidth: 3 },
+            markerEnd: { type: 'arrowclosed', color: '#3f3f46', width: 25, height: 25 }
+          });
+        }
+      });
+
+      return { nodes: flowNodes, edges: flowEdges };
+    }
+
+    // Priority 3: Process items array (fallback logic)
     if (data.items && Array.isArray(data.items)) {
-      console.log('✅ [ROADMAP] Detected roadmap format with items array');
-      console.log('📊 [ROADMAP] Items count:', data.items.length);
-      
+      console.log('✅ [ROADMAP] Processing items array into flow');
+
       const flowNodes = data.items.map((item, index) => {
-        console.log(`📋 [ROADMAP] Processing item ${index + 1}:`, item.title);
-        
-        // Better layout algorithm - vertical flow with horizontal spacing
         const row = Math.floor(index / 2);
         const col = index % 2;
-        
+
         return {
           id: item.id.toString(),
           type: 'default',
-          position: {
-            x: col * 350 + 100,
-            y: row * 200 + 100
-          },
+          position: { x: col * 350 + 100, y: row * 200 + 100 },
           data: {
             label: item.title,
             difficulty: item.difficulty,
@@ -52,7 +167,7 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
             color: '#ffffff',
             border: '2px solid',
             borderColor: getNodeBorderColor(item.difficulty),
-            borderRadius: '16px',
+            borderRadius: '24px',
             padding: '20px',
             fontSize: '15px',
             fontWeight: '700',
@@ -71,255 +186,27 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
         target: data.items[index + 1].id.toString(),
         type: 'smoothstep',
         animated: true,
-        style: { 
-          stroke: '#3f3f46', 
-          strokeWidth: 2.5,
-          strokeDasharray: '5,5'
-        },
-        markerEnd: { 
-          type: 'arrowclosed', 
-          color: '#3f3f46',
-          width: 20,
-          height: 20
-        }
+        style: { stroke: '#3f3f46', strokeWidth: 2, strokeDasharray: '5,5' },
+        markerEnd: { type: 'arrowclosed', color: '#3f3f46', width: 20, height: 20 }
       }));
-      
-      console.log('✅ [ROADMAP] Processed roadmap format successfully');
-      console.log('📊 [ROADMAP] Generated nodes:', flowNodes.length);
-      console.log('📊 [ROADMAP] Generated edges:', flowEdges.length);
-      
-      return { nodes: flowNodes, edges: flowEdges };
-    }
-
-    // Handle graph format (nodes, edges) - fallback for other endpoints
-    if (data.nodes && Array.isArray(data.nodes)) {
-      console.log('✅ [ROADMAP] Detected graph format with nodes array');
-      console.log('📊 [ROADMAP] Nodes count:', data.nodes.length);
-      
-      const flowNodes = data.nodes.map((node, index) => {
-        const row = Math.floor(index / 2);
-        const col = index % 2;
-        
-        return {
-          id: node.id.toString(),
-          type: 'default',
-          position: {
-            x: col * 350 + 100,
-            y: row * 200 + 100
-          },
-          data: {
-            label: node.title || node.data?.label,
-            difficulty: node.difficulty || node.data?.difficulty,
-            description: node.description || node.data?.description,
-            skills: userSkills[node.id] || 0
-          },
-          style: {
-            background: getNodeBackground(node.difficulty || node.data?.difficulty),
-            color: '#ffffff',
-            border: '2px solid',
-            borderColor: getNodeBorderColor(node.difficulty || node.data?.difficulty),
-            borderRadius: '16px',
-            padding: '20px',
-            fontSize: '15px',
-            fontWeight: '700',
-            minWidth: '220px',
-            textAlign: 'center',
-            boxShadow: getNodeShadow(node.difficulty || node.data?.difficulty),
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            cursor: 'pointer'
-          }
-        };
-      });
-
-      const flowEdges = data.edges ? data.edges.map((edge) => ({
-        id: `e${edge.source}-${edge.target}`,
-        source: edge.source.toString(),
-        target: edge.target.toString(),
-        type: 'smoothstep',
-        animated: true,
-        style: { 
-          stroke: '#3f3f46', 
-          strokeWidth: 2.5,
-          strokeDasharray: '5,5'
-        },
-        markerEnd: { 
-          type: 'arrowclosed', 
-          color: '#3f3f46',
-          width: 20,
-          height: 20
-        }
-      })) : [];
-      
-      console.log('✅ [ROADMAP] Processed graph format successfully');
-      console.log('📊 [ROADMAP] Generated nodes:', flowNodes.length);
-      console.log('📊 [ROADMAP] Generated edges:', flowEdges.length);
 
       return { nodes: flowNodes, edges: flowEdges };
     }
 
-    // Handle flat object format where keys are topic names
-    const dataKeys = Object.keys(data);
-    if (dataKeys.length > 0 && typeof data[dataKeys[0]] === 'object') {
-      console.log('✅ [ROADMAP] Detected flat object format with topic keys');
-      console.log('📊 [ROADMAP] Topics count:', dataKeys.length);
-      
-      const flowNodes = dataKeys.map((topicName, index) => {
-        const topicData = data[topicName];
-        console.log(`📋 [ROADMAP] Processing topic ${index + 1}:`, topicName);
-        
-        // Better layout algorithm - vertical flow with horizontal spacing
-        const row = Math.floor(index / 2);
-        const col = index % 2;
-        
-        return {
-          id: (index + 1).toString(),
-          type: 'default',
-          position: {
-            x: col * 350 + 100,
-            y: row * 200 + 100
-          },
-          data: {
-            label: topicName,
-            difficulty: topicData.difficulty || topicData.Difficulty || 'beginner',
-            description: topicData.description || topicData.Description || '',
-            skills: userSkills[index + 1] || 0,
-            estimatedTime: topicData.estimatedTime || topicData['Estimated Time']
-          },
-          style: {
-            background: getNodeBackground(topicData.difficulty || topicData.Difficulty || 'beginner'),
-            color: '#ffffff',
-            border: '2px solid',
-            borderColor: getNodeBorderColor(topicData.difficulty || topicData.Difficulty || 'beginner'),
-            borderRadius: '16px',
-            padding: '20px',
-            fontSize: '15px',
-            fontWeight: '700',
-            minWidth: '220px',
-            textAlign: 'center',
-            boxShadow: getNodeShadow(topicData.difficulty || topicData.Difficulty || 'beginner'),
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            cursor: 'pointer'
-          }
-        };
-      });
-
-      // Create sequential edges connecting topics in order
-      const flowEdges = dataKeys.slice(0, -1).map((_, index) => ({
-        id: `e${index + 1}-${index + 2}`,
-        source: (index + 1).toString(),
-        target: (index + 2).toString(),
-        type: 'smoothstep',
-        animated: true,
-        style: { 
-          stroke: '#3f3f46', 
-          strokeWidth: 2.5,
-          strokeDasharray: '5,5'
-        },
-        markerEnd: { 
-          type: 'arrowclosed', 
-          color: '#3f3f46',
-          width: 20,
-          height: 20
-        }
-      }));
-      
-      console.log('✅ [ROADMAP] Processed flat object format successfully');
-      console.log('📊 [ROADMAP] Generated nodes:', flowNodes.length);
-      console.log('📊 [ROADMAP] Generated edges:', flowEdges.length);
-      
-      return { nodes: flowNodes, edges: flowEdges };
-    }
-    
-    // Handle flat object format where keys are topic names
-    const topicKeys = Object.keys(data);
-    if (topicKeys.length > 0 && typeof data[topicKeys[0]] === 'object') {
-      console.log('✅ [ROADMAP] Detected flat object format with topic keys');
-      console.log('📊 [ROADMAP] Topics count:', topicKeys.length);
-      
-      const flowNodes = topicKeys.map((topicName, index) => {
-        const topicData = data[topicName];
-        console.log(`📋 [ROADMAP] Processing topic ${index + 1}:`, topicName);
-        
-        // Better layout algorithm - vertical flow with horizontal spacing
-        const row = Math.floor(index / 2);
-        const col = index % 2;
-        
-        return {
-          id: (index + 1).toString(),
-          type: 'default',
-          position: {
-            x: col * 350 + 100,
-            y: row * 200 + 100
-          },
-          data: {
-            label: topicName,
-            difficulty: topicData.difficulty || topicData.Difficulty || 'beginner',
-            description: topicData.description || topicData.Description || topicData.Overview || '',
-            skills: userSkills[index + 1] || 0,
-            estimatedTime: topicData.estimatedTime || topicData['Estimated Time'] || topicData['Time Required']
-          },
-          style: {
-            background: getNodeBackground(topicData.difficulty || topicData.Difficulty || 'beginner'),
-            color: '#ffffff',
-            border: '2px solid',
-            borderColor: getNodeBorderColor(topicData.difficulty || topicData.Difficulty || 'beginner'),
-            borderRadius: '16px',
-            padding: '20px',
-            fontSize: '15px',
-            fontWeight: '700',
-            minWidth: '220px',
-            textAlign: 'center',
-            boxShadow: getNodeShadow(topicData.difficulty || topicData.Difficulty || 'beginner'),
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            cursor: 'pointer'
-          }
-        };
-      });
-
-      // Create sequential edges connecting topics in order
-      const flowEdges = topicKeys.slice(0, -1).map((_, index) => ({
-        id: `e${index + 1}-${index + 2}`,
-        source: (index + 1).toString(),
-        target: (index + 2).toString(),
-        type: 'smoothstep',
-        animated: true,
-        style: { 
-          stroke: '#3f3f46', 
-          strokeWidth: 2.5,
-          strokeDasharray: '5,5'
-        },
-        markerEnd: { 
-          type: 'arrowclosed', 
-          color: '#3f3f46',
-          width: 20,
-          height: 20
-        }
-      }));
-      
-      console.log('✅ [ROADMAP] Processed flat object format successfully');
-      console.log('📊 [ROADMAP] Generated nodes:', flowNodes.length);
-      console.log('📊 [ROADMAP] Generated edges:', flowEdges.length);
-      
-      return { nodes: flowNodes, edges: flowEdges };
-    }
-    
-    console.warn('⚠️ [ROADMAP] Unknown data format - no items or nodes array found');
-    console.log('📋 [ROADMAP] Data keys:', Object.keys(data));
-    
     return { nodes: [], edges: [] };
   }, [userSkills]);
 
   const getNodeBackground = (difficulty) => {
     const normalizedDifficulty = difficulty?.toLowerCase()?.trim();
-    
+
     console.log('🎨 [COLOR] Input difficulty:', difficulty, '→ Normalized:', normalizedDifficulty);
-    
+
     switch (normalizedDifficulty) {
-      case 'beginner': 
+      case 'beginner':
         return 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'; // Indigo to Purple
-      case 'intermediate': 
+      case 'intermediate':
         return 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)'; // Pink to Rose
-      case 'advanced': 
+      case 'advanced':
         return 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)'; // Amber to Red
       default:
         console.warn('⚠️ [COLOR] Unknown difficulty, using default:', difficulty);
@@ -329,7 +216,7 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
 
   const getNodeBorderColor = (difficulty) => {
     const normalizedDifficulty = difficulty?.toLowerCase()?.trim();
-    
+
     switch (normalizedDifficulty) {
       case 'beginner': return '#8b5cf6';
       case 'intermediate': return '#f43f5e';
@@ -340,15 +227,15 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
 
   const getNodeShadow = (difficulty) => {
     const normalizedDifficulty = difficulty?.toLowerCase()?.trim();
-    
+
     switch (normalizedDifficulty) {
-      case 'beginner': 
+      case 'beginner':
         return '0 10px 25px -5px rgba(139, 92, 246, 0.3), 0 8px 10px -6px rgba(139, 92, 246, 0.2)';
-      case 'intermediate': 
+      case 'intermediate':
         return '0 10px 25px -5px rgba(244, 63, 94, 0.3), 0 8px 10px -6px rgba(244, 63, 94, 0.2)';
-      case 'advanced': 
+      case 'advanced':
         return '0 10px 25px -5px rgba(239, 68, 68, 0.3), 0 8px 10px -6px rgba(239, 68, 68, 0.2)';
-      default: 
+      default:
         return '0 10px 25px -5px rgba(6, 182, 212, 0.3), 0 8px 10px -6px rgba(6, 182, 212, 0.2)';
     }
   };
@@ -358,16 +245,16 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
     console.log('🔵 [ROADMAP] useEffect triggered');
     console.log('📋 [ROADMAP] roadmapData received:', JSON.stringify(roadmapData, null, 2));
     console.log('📋 [ROADMAP] userSkills:', JSON.stringify(userSkills, null, 2));
-    
+
     const { nodes: newNodes, edges: newEdges } = processRoadmapData(roadmapData);
-    
+
     console.log('📊 [ROADMAP] Processed nodes count:', newNodes.length);
     console.log('📊 [ROADMAP] Processed edges count:', newEdges.length);
     console.log('📊 [ROADMAP] Setting state with nodes and edges...');
-    
+
     setNodes(newNodes);
     setEdges(newEdges);
-    
+
     if (newNodes.length === 0) {
       console.warn('⚠️ [ROADMAP] No nodes generated! Check the data format.');
     }
@@ -388,7 +275,7 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
         {/* Background Effects */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-        
+
         <div className="relative z-10 bg-zinc-900 border border-zinc-800 rounded-2xl p-10 max-w-lg w-full text-center">
           <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-4xl">
             ⚠️
@@ -462,7 +349,7 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
             attributionPosition="bottom-left"
             className="bg-zinc-950"
           >
-            <Controls 
+            <Controls
               style={{
                 background: 'rgba(24, 24, 27, 0.8)',
                 border: '1px solid #27272a',
@@ -471,9 +358,9 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
               }}
               className="[&_button]:bg-zinc-800/80 [&_button]:border-zinc-700 [&_button]:text-zinc-300 [&_button:hover]:bg-zinc-700 [&_button:hover]:text-white"
             />
-            <Background 
-              variant="dots" 
-              gap={20} 
+            <Background
+              variant="dots"
+              gap={20}
               size={1.5}
               color="#27272a"
               style={{ background: '#09090b' }}
@@ -507,22 +394,22 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
         {selectedNode && (
           <NodeDetailPanel
             node={selectedNode}
+            subject={currentSubject}
             onClose={() => setSelectedNode(null)}
-            onStartLesson={(topicId) => navigate(`/lesson/${topicId}`)}
+            onStartLesson={(topicId, lessonData) => navigate(`/lesson/${topicId}`, { state: { preloadedLesson: lessonData } })}
           />
         )}
       </div>
 
       {/* Custom Styles for React Flow with cool animations */}
-      <style jsx global>{`
+      <style>{`
         .react-flow__node {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .react-flow__node:hover {
-          transform: scale(1.1) translateY(-5px);
+          transform: scale(1.05) translateY(-8px);
           z-index: 1000 !important;
-          box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6) !important;
         }
         
         .react-flow__node.selected {
@@ -541,13 +428,14 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
         }
 
         .react-flow__edge-path {
-          transition: all 0.3s ease;
+          transition: stroke 0.3s ease, stroke-width 0.3s ease;
+          stroke-linecap: round;
         }
 
         .react-flow__edge:hover .react-flow__edge-path {
-          stroke: #a855f7 !important;
-          stroke-width: 3.5 !important;
-          filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.6));
+          stroke: #ffffff !important;
+          stroke-width: 4 !important;
+          filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.6));
         }
 
         .react-flow__edge.animated .react-flow__edge-path {

@@ -38,11 +38,59 @@
   }
 }
 
+@keyframes noise {
+  0%, 100% { transform: translate(0, 0) }
+  10% { transform: translate(-5%, -5%) }
+  20% { transform: translate(-10%, 5%) }
+  30% { transform: translate(5%, -10%) }
+  40% { transform: translate(-5%, 15%) }
+  50% { transform: translate(-10%, 5%) }
+  60% { transform: translate(15%, 0) }
+  70% { transform: translate(0, 10%) }
+  80% { transform: translate(-15%, 0) }
+  90% { transform: translate(10%, 5%) }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) }
+  50% { transform: translateY(-10px) }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.1 }
+  50% { opacity: 0.3 }
+}
+
 .animate-shimmer {
   animation: shimmer 2s ease-in-out infinite;
 }
 
 .animate-spin-slow {
   animation: spin-slow 4s linear infinite;
+}
+
+.animate-noise {
+  animation: noise 0.2s infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.bg-grain {
+  position: relative;
+}
+
+.bg-grain::before {
+  content: "";
+  position: absolute;
+  inset: -200%;
+  width: 400%;
+  height: 400%;
+  background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+  opacity: 0.15;
+  pointer-events: none;
+  animation: noise 1s steps(2) infinite;
+  z-index: 0;
 }
 
