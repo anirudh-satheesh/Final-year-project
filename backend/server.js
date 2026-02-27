@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import ollama from 'ollama';
+import Groq from 'groq-sdk';
+import dotenv from 'dotenv';
 import topoSort from '../utils/topoSort.js';
 import graphPrompt from '../prompts/graphPrompt.js';
 import roadmapPrompt from '../prompts/roadmapPrompt.js';
@@ -8,6 +10,12 @@ import chatPrompt from '../prompts/chatPrompt.js';
 import { topicOverviewPrompt } from '../prompts/topicOverviewPrompt.js';
 import lessonPrompt from '../prompts/lessonPrompt.js';
 import { assessmentPrompt } from '../prompts/assessmentPrompt.js';
+
+dotenv.config();
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY || 'PLACEHOLDER_KEY',
+});
 
 const app = express();
 app.use(cors());
@@ -110,23 +118,61 @@ function normalizeRoadmapData(rawData, subject) {
   };
 }
 
-// 🔹 Single helper function to talk to Ollama
-async function askLLM(prompt, model = process.env.LLM_MODEL || "llama3.2:latest", temperature = 0) {
-  let res;
-  try {
-    res = await ollama.chat({
-      model,
-      temperature,
-      messages: [{ role: "user", content: prompt }],
-    });
-  } catch (err) {
-    if (err.cause && err.cause.code === 'ECONNREFUSED') {
-      throw new Error("Ollama is not running. Please start it with 'ollama serve'.");
+// 🔹 Single helper function to talk to LLMs (Groq primary, Ollama backup)
+async function askLLM(prompt, model = process.env.LLM_MODEL || "llama-3.3-70b-versatile", temperature = 0) {
+  let output;
+  let usedGroq = false;
+  let groqError = null;
+
+  // 1. Try Groq First
+  if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'your_groq_api_key_here') {
+    try {
+      console.log(`🤖 [LLM] Attempting Groq with model: ${model}`);
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: model,
+        temperature: temperature,
+      });
+      output = chatCompletion.choices[0].message.content;
+      usedGroq = true;
+      console.log('✅ [LLM] Groq response received');
+    } catch (err) {
+      groqError = err.message;
+      console.error("⚠️ [LLM] Groq failed, automatically falling back to Ollama:", err.message);
     }
-    throw err;
+  } else {
+    console.log("ℹ️ [LLM] Groq API key not provided or placeholder used. Switching to Ollama backup.");
   }
 
-  let output = res.message.content;
+  // 2. Fallback to Ollama if Groq failed or wasn't used
+  if (!usedGroq) {
+    try {
+      const ollamaModel = process.env.SECONDARY_LLM_MODEL || "llama3.2:latest";
+      console.log(`🤖 [LLM] Attempting Ollama backup with model: ${ollamaModel}`);
+      const res = await ollama.chat({
+        model: ollamaModel,
+        temperature,
+        messages: [{ role: "user", content: prompt }],
+      });
+      output = res.message.content;
+      console.log('✅ [LLM] Ollama response received');
+    } catch (err) {
+      console.error("❌ [LLM] Ollama backup also failed:", err.message);
+
+      let errorMsg = "Both AI services failed.";
+      if (groqError) errorMsg += ` Groq Error: ${groqError}.`;
+
+      if (err.cause && err.cause.code === 'ECONNREFUSED') {
+        errorMsg += " Ollama is not running. Please start it with 'ollama serve'.";
+      } else if (err.message.includes("system memory")) {
+        errorMsg += " Ollama failed due to insufficient RAM. Try a smaller model like 'tinyllama'.";
+      } else {
+        errorMsg += ` Ollama Error: ${err.message}`;
+      }
+
+      throw new Error(errorMsg);
+    }
+  }
 
   // Remove code block markers if LLM adds them
   output = output.replace(/```json|```/g, "").trim();
@@ -674,7 +720,7 @@ app.post("/internal/fetch-lesson", async (req, res) => {
   }
 });
 
-// 🔹 Assistant for topic validation
+// 🔹 Assistant for topic validation (Groq primary, Ollama backup)
 app.post("/internal/subject-verify", async (req, res) => {
   console.log('🚀 [BACKEND] HIT: /internal/subject-verify');
   const { data } = req.body;
@@ -682,16 +728,58 @@ app.post("/internal/subject-verify", async (req, res) => {
   try {
     const systemMessage = { role: "system", content: chatPrompt() };
     const chatMessages = [systemMessage, ...data];
+    let responseMessage;
+    let usedGroq = false;
+    let groqError = null;
 
-    const response = await ollama.chat({
-      model: process.env.LLM_MODEL || "llama3.2:latest",
-      messages: chatMessages,
-    });
+    // 1. Try Groq
+    if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'your_groq_api_key_here') {
+      try {
+        const model = process.env.LLM_MODEL || "llama-3.3-70b-versatile";
+        console.log(`🤖 [VERIFY] Attempting Groq with model: ${model}`);
+        const chatCompletion = await groq.chat.completions.create({
+          messages: chatMessages,
+          model: model,
+        });
+        responseMessage = chatCompletion.choices[0].message;
+        usedGroq = true;
+        console.log('✅ [VERIFY] Groq response received');
+      } catch (err) {
+        groqError = err.message;
+        console.error("⚠️ [VERIFY] Groq failed, falling back to Ollama:", err.message);
+      }
+    }
 
-    res.json({ message: response.message });
+    // 2. Fallback to Ollama
+    if (!usedGroq) {
+      try {
+        const ollamaModel = process.env.SECONDARY_LLM_MODEL || "llama3.2:latest";
+        console.log(`🤖 [VERIFY] Attempting Ollama backup with model: ${ollamaModel}`);
+        const response = await ollama.chat({
+          model: ollamaModel,
+          messages: chatMessages,
+        });
+        responseMessage = response.message;
+        console.log('✅ [VERIFY] Ollama response received');
+      } catch (err) {
+        console.error("❌ [VERIFY] Ollama backup also failed:", err.message);
+        let errorMsg = "Topic analysis failed.";
+        if (groqError) errorMsg += ` (Groq offline: ${groqError})`;
+
+        if (err.cause && err.cause.code === 'ECONNREFUSED') {
+          errorMsg += " Ollama is not running.";
+        } else if (err.message.includes("memory")) {
+          errorMsg += ` Ollama memory error: ${err.message}`;
+        }
+
+        return res.status(503).json({ error: errorMsg });
+      }
+    }
+
+    res.json({ message: responseMessage });
   } catch (err) {
     console.error('❌ [BACKEND] Error in /internal/subject-verify:', err.message);
-    res.status(500).json({ error: "Topic analysis failed" });
+    res.status(500).json({ error: err.message || "Topic analysis failed" });
   }
 });
 
