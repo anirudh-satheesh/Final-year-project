@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { ReactFlow, Controls, Background } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import NodeDetailPanel from '../components/NodeDetailPanel';
-import SkillAssessmentForm from '../components/SkillAssessmentForm';
 
 const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject }) => {
   const [selectedNode, setSelectedNode] = useState(null);
-  const [showSkillAssessment, setShowSkillAssessment] = useState(!Object.keys(userSkills).length);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const navigate = useNavigate();
@@ -264,11 +262,6 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
     setSelectedNode(node);
   };
 
-  const handleSkillAssessmentComplete = (skills) => {
-    setUserSkills(skills);
-    setShowSkillAssessment(false);
-  };
-
   if (!roadmapData) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
@@ -294,16 +287,6 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
     );
   }
 
-  if (showSkillAssessment) {
-    return (
-      <SkillAssessmentForm
-        topics={roadmapData.nodes || []}
-        onComplete={handleSkillAssessmentComplete}
-        onSkip={() => setShowSkillAssessment(false)}
-      />
-    );
-  }
-
   return (
     <div className="min-h-screen bg-zinc-950">
       {/* Header */}
@@ -319,7 +302,7 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setShowSkillAssessment(true)}
+                onClick={() => navigate('/assessment')}
                 className="px-6 py-3 bg-zinc-800/80 border border-zinc-700 text-zinc-300 rounded-xl 
                          hover:bg-zinc-700 hover:border-zinc-600 hover:text-white transition-all font-semibold text-sm"
               >
