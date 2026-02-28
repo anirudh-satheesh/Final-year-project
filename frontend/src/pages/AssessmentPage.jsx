@@ -54,13 +54,6 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
     const newAnswers = [...answers];
     newAnswers[currentQuestionIndex] = optionIndex;
     setAnswers(newAnswers);
-
-    // Auto-advance after a short delay
-    if (currentQuestionIndex < questions.length - 1) {
-      setTimeout(() => {
-        setCurrentQuestionIndex(prev => prev + 1);
-      }, 400);
-    }
   };
 
   const handleSubmit = async () => {
@@ -279,26 +272,31 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
               </div>
 
               <div className="flex items-center justify-between pt-4">
-                <button
-                  onClick={handleSkip}
-                  className="text-xs font-bold text-zinc-600 hover:text-white transition-colors uppercase tracking-widest"
-                >
-                  Skip Assessment
-                </button>
-
                 <div className="flex gap-3">
                   {currentQuestionIndex > 0 && (
                     <button
-                      onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
+                      onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
                       className="px-6 py-3 bg-zinc-900 text-zinc-400 font-bold border border-zinc-800 rounded-xl hover:text-white hover:border-zinc-700 transition-all uppercase text-[10px] tracking-widest"
                     >
                       Previous
                     </button>
                   )}
-                  {currentQuestionIndex === questions.length - 1 && answers[currentQuestionIndex] !== null && (
+                </div>
+
+                <div className="flex gap-3">
+                  {currentQuestionIndex < questions.length - 1 ? (
+                    <button
+                      onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
+                      disabled={answers[currentQuestionIndex] === null}
+                      className="px-8 py-3 bg-zinc-100 text-black font-black rounded-xl hover:bg-cyan-400 transition-all shadow-lg uppercase text-[10px] tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next Question →
+                    </button>
+                  ) : (
                     <button
                       onClick={handleSubmit}
-                      className="px-8 py-3 bg-zinc-100 text-black font-black rounded-xl hover:bg-cyan-400 transition-all shadow-lg uppercase text-[10px] tracking-widest"
+                      disabled={answers[currentQuestionIndex] === null}
+                      className="px-8 py-3 bg-zinc-100 text-black font-black rounded-xl hover:bg-cyan-400 transition-all shadow-lg uppercase text-[10px] tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Submit Final
                     </button>
@@ -357,15 +355,9 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
             <button
               onClick={handleStartAssessment}
               disabled={isFetchingQuestions || questions.length === 0}
-              className="px-10 py-4 bg-zinc-100 text-black font-black rounded-2xl hover:bg-cyan-400 transition-all active:scale-95 shadow-xl shadow-cyan-500/10 uppercase tracking-widest text-xs disabled:opacity-50"
+              className="px-12 py-5 bg-zinc-100 text-black font-black rounded-2xl hover:bg-cyan-400 transition-all active:scale-95 shadow-xl shadow-cyan-500/10 uppercase tracking-widest text-xs disabled:opacity-50"
             >
               {isFetchingQuestions ? 'Preparing Assessment...' : 'Begin Assessment'}
-            </button>
-            <button
-              onClick={handleSkip}
-              className="px-10 py-4 bg-zinc-900 text-white font-bold border border-zinc-800 rounded-2xl hover:border-zinc-700 transition-all active:scale-95 uppercase tracking-widest text-xs"
-            >
-              Skip & Start Learning
             </button>
           </div>
         </div>
