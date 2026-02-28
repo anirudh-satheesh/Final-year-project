@@ -355,9 +355,15 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
             <button
               onClick={handleStartAssessment}
               disabled={isFetchingQuestions || questions.length === 0}
-              className="px-12 py-5 bg-zinc-100 text-black font-black rounded-2xl hover:bg-cyan-400 transition-all active:scale-95 shadow-xl shadow-cyan-500/10 uppercase tracking-widest text-xs disabled:opacity-50"
+              className="px-10 py-4 bg-zinc-100 text-black font-black rounded-2xl hover:bg-cyan-400 transition-all active:scale-95 shadow-xl shadow-cyan-500/10 uppercase tracking-widest text-xs disabled:opacity-50"
             >
               {isFetchingQuestions ? 'Preparing Assessment...' : 'Begin Assessment'}
+            </button>
+            <button
+              onClick={handleSkip}
+              className="px-10 py-4 bg-zinc-900 text-white font-bold border border-zinc-800 rounded-2xl hover:border-zinc-700 transition-all active:scale-95 uppercase tracking-widest text-xs"
+            >
+              Skip & Start Learning
             </button>
           </div>
         </div>
