@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ReactFlow, Controls, Background } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import NodeDetailPanel from '../components/NodeDetailPanel';
+import Navbar from '../components/Navbar';
 
 const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject }) => {
   const [selectedNode, setSelectedNode] = useState(null);
@@ -289,36 +290,33 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
 
   return (
     <div className="min-h-screen bg-zinc-950">
-      {/* Header */}
-      <header className="bg-zinc-900/50 backdrop-blur-xl border-b border-zinc-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-black text-white tracking-tight mb-1">
-                {currentSubject}
-                <span className="text-zinc-600"> Learning Path</span>
-              </h1>
-              <p className="text-zinc-500 text-sm">Click any node to explore • Drag to navigate</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate('/assessment')}
-                className="px-6 py-3 bg-zinc-800/80 border border-zinc-700 text-zinc-300 rounded-xl 
-                         hover:bg-zinc-700 hover:border-zinc-600 hover:text-white transition-all font-semibold text-sm"
-              >
-                📊 Reassess
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl 
-                         font-bold hover:shadow-lg hover:shadow-purple-500/50 transition-all transform hover:scale-105 text-sm"
-              >
-                ✨ New Path
-              </button>
-            </div>
+      <Navbar
+        rightContent={
+          <div className="flex gap-4">
+            <button
+              onClick={() => navigate('/assessment')}
+              className="px-6 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-lg 
+                       hover:bg-zinc-800 hover:border-zinc-700 hover:text-white transition-all font-medium text-sm"
+            >
+              📊 Reassess
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-2.5 bg-white text-black rounded-lg 
+                       font-semibold hover:bg-zinc-200 transition-all shadow-sm text-sm active:scale-95"
+            >
+              ✨ New Path
+            </button>
           </div>
+        }
+      >
+        <div className="flex flex-col">
+          <h2 className="text-xl font-semibold text-white tracking-tight">
+            {currentSubject}
+          </h2>
+          <p className="text-zinc-500 text-sm font-medium">Learning Journey</p>
         </div>
-      </header>
+      </Navbar>
 
       {/* Main Content */}
       <div className="flex h-[calc(100vh-93px)]">
