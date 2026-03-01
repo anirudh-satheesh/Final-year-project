@@ -39,6 +39,16 @@ final-year-project/
 3. **Frontend Configuration**:
    - Navigate to the `frontend` directory: `cd frontend`
    - Install dependencies: `npm install`
+   - Copy the example environment file: `cp .env.example .env`
+   - Open `.env` and configure your **Firebase Credentials**:
+     ```env
+     VITE_FIREBASE_API_KEY=your_key
+     VITE_FIREBASE_AUTH_DOMAIN=your_domain
+     VITE_FIREBASE_PROJECT_ID=your_id
+     VITE_FIREBASE_STORAGE_BUCKET=your_bucket
+     VITE_FIREBASE_MESSAGING_SENDER_ID=your_id
+     VITE_FIREBASE_APP_ID=your_app_id
+     ```
 
 ### Running the Project
 
@@ -57,6 +67,14 @@ npm run dev
 ```
 
 The application will be available at `http://localhost:5173`.
+
+## Key Features
+
+- **AI-Powered Diagnostics**: A single-page assessment system that calibrates your technical nodes using LLMs.
+- **Interactive Roadmap Generator**: Visualizes learning dependencies using topological sorting.
+- **Split-Screen Assistant**: A premium chat interface for defining learning objectives and architecting paths.
+- **Google Authentication**: Secure session management powered by Firebase.
+- **Modern UI**: Crafted with vanilla CSS, glassmorphism, and smooth-scroll physics.
 
 ## How to get a Groq API Key
 
@@ -77,6 +95,6 @@ This project uses a primary and backup LLM system:
 ## Tech Stack
 - **Frontend**: React 18, Vite, HSL-tailored CSS
 - **Backend**: Node.js, Express, Groq SDK, Ollama SDK
+- **Authentication**: Firebase (Google Sign-In)
 - **AI Models**: Llama 3.3 (Groq), Llama 3.2 (Ollama)
 - **Utilities**: Topological Sorting for dependency paths
-
