@@ -6,6 +6,7 @@ import RoadmapPage from './src/pages/RoadmapPage';
 import LessonPage from './src/pages/LessonPage';
 import DashboardPage from './src/pages/DashboardPage';
 import ChatPage from './src/pages/ChatPage';
+import ExplorePage from './src/pages/ExplorePage';
 import { AuthProvider } from './src/contexts/AuthContext';
 
 function App() {
@@ -36,6 +37,14 @@ function App() {
               path="/chat"
               element={
                 <ChatPage
+                  setCurrentSubject={setCurrentSubject}
+                />
+              }
+            />
+            <Route
+              path="/explore"
+              element={
+                <ExplorePage
                   setCurrentSubject={setCurrentSubject}
                 />
               }

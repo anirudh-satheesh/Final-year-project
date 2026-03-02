@@ -53,15 +53,15 @@ const HomePage = ({ currentSubject, setCurrentSubject }) => {
                   >
                     Architect Your Path
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => {
                       const element = document.getElementById('features');
                       element?.scrollIntoView({ behavior: 'smooth' });
                     }}
                     className="px-8 py-4 bg-zinc-900 border border-zinc-800 text-white font-black uppercase tracking-[0.2em] text-xs rounded-full hover:border-zinc-700 transition-all active:scale-95"
                   >
-                    Learn More
-                  </button>
+                    Know More
+                  </button> */}
                 </div>
 
                 <div className="space-y-4 pt-12">
