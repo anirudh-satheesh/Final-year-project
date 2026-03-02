@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { apiService } from '../services/apiService';
+import LoadingComponent from '../components/LoadingComponent';
 
 const LessonPage = () => {
   const { topicId } = useParams();
@@ -56,19 +57,7 @@ const LessonPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent opacity-50" />
-        <div className="w-24 h-24 mb-6 relative">
-          <div className="absolute inset-0 border-4 border-indigo-500/20 rounded-full" />
-          <div className="absolute inset-0 border-4 border-transparent border-t-indigo-500 rounded-full animate-spin" />
-          <div className="absolute inset-2 border-4 border-transparent border-t-purple-500 rounded-full animate-spin [animation-duration:1.5s]" />
-          <div className="absolute inset-4 border-4 border-transparent border-t-pink-500 rounded-full animate-spin [animation-duration:2s]" />
-        </div>
-        <h2 className="text-2xl font-black text-white mb-2 animate-pulse">Crafting your lesson...</h2>
-        <p className="text-zinc-500 max-w-xs">Our AI is gathering the best examples and explanations for this topic.</p>
-      </div>
-    );
+    return <LoadingComponent />;
   }
 
   if (error || !lesson) {
@@ -310,11 +299,11 @@ const LessonPage = () => {
                 </nav>
               </div>
 
-              <div className="glass-card p-6 border-indigo-500/10 bg-indigo-500/5">
+              <div className="glass-card p-6 border-white/10 bg-white/5">
                 <div className="text-center">
-                  <div className="text-xs font-bold text-indigo-400 mb-2 font-mono">NEURAL SYNC</div>
+                  <div className="text-[10px] font-black text-blue-400 mb-2 uppercase tracking-[0.3em]">Module Progress</div>
                   <div className="text-2xl font-black text-white">{Math.round(progressPercentage)}%</div>
-                  <div className="mt-2 text-[10px] text-zinc-500 leading-tight">Mastery levels are being calibrated across your mental node graph.</div>
+                  <div className="mt-2 text-[10px] text-zinc-500 leading-tight uppercase tracking-widest">Integrating nodes into your architectural sequence.</div>
                 </div>
               </div>
 

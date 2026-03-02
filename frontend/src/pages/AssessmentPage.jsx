@@ -173,52 +173,60 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#030303] text-zinc-100 flex items-center justify-center p-6 relative font-sans selection:bg-cyan-500/30 overflow-hidden">
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-6 relative font-sans selection:bg-white/10 overflow-hidden">
         <Background />
 
         <div className="relative z-10 w-full max-w-2xl text-center">
           {/* Success Ring Animation */}
           <div className="relative w-32 h-32 mx-auto mb-10">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full blur-2xl opacity-40 animate-pulse" />
-            <div className="relative w-full h-full border-2 border-emerald-500/30 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.2)]">
-              <span className="text-5xl animate-in zoom-in duration-700 font-black">✓</span>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 rounded-full blur-2xl opacity-40 animate-pulse" />
+            <div className="relative w-full h-full border-2 border-white/5 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(255,255,255,0.05)]">
+              <span className="text-4xl animate-in zoom-in duration-700 font-light text-zinc-300">✓</span>
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-emerald-500/5 border border-emerald-500/20 mb-8">
-            <span className="text-sm font-semibold text-emerald-400 tracking-widest uppercase mt-0.5">Discovery Complete</span>
+          <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-blue-500/5 border border-white/10 mb-8">
+            <span className="text-[10px] font-black text-blue-400 tracking-[0.3em] uppercase mt-0.5">Profile Calibrated</span>
           </div>
 
-          <h2 className="text-4xl font-semibold tracking-tight text-white mb-6 leading-tight">
-            Analysis finalized. <br />
-            <span className="text-zinc-500 font-medium">Your customized path is ready.</span>
+          <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-white mb-6 leading-tight">
+            Sequence defined. <br />
+            <span className="text-zinc-500 italic font-medium text-3xl">Architecting your path.</span>
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 text-left">
-            <div className="p-8 rounded-[2rem] bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 text-left">
+            <div className="p-8 rounded-[2.5rem] bg-zinc-900/30 backdrop-blur-xl border border-white/5">
               <div className="text-4xl font-black text-white mb-2 tracking-tight">
-                <span className={`bg-gradient-to-r ${getLevelColor(score)} bg-clip-text text-transparent underline decoration-white/10 decoration-2 underline-offset-8`}>
+                <span className={`bg-gradient-to-r ${getLevelColor(score)} bg-clip-text text-transparent`}>
                   {score}/{questions.length}
                 </span>
               </div>
-              <div className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] leading-tight pt-4 border-t border-white/5 mt-4">Precision Score</div>
+              <div className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] leading-tight pt-4 border-t border-white/5 mt-4">Precision Score</div>
             </div>
 
-            <div className="p-8 rounded-[2rem] bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm flex flex-col justify-center">
-              <div className="text-xl font-black text-white mb-1 tracking-tight uppercase">
+            <div className="p-8 rounded-[2.5rem] bg-zinc-900/30 backdrop-blur-xl border border-white/5 flex flex-col justify-center">
+              <div className="text-xl font-bold text-white mb-1 tracking-tight uppercase">
                 {getLevel(score)}
               </div>
-              <div className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] leading-tight pt-4 border-t border-white/5 mt-4">Knowledge Tier</div>
+              <div className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] leading-tight pt-4 border-t border-white/5 mt-4">Knowledge Tier</div>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="h-1 bg-zinc-900 rounded-full overflow-hidden w-full max-w-sm mx-auto relative border border-zinc-800/50">
-              <div className="h-full bg-cyan-500 rounded-full animate-shimmer" style={{ width: '100%' }} />
+          <div className="space-y-6 max-w-xs mx-auto">
+            <div className="h-0.5 bg-zinc-900 rounded-full overflow-hidden w-full relative border border-white/5">
+              <div className="h-full bg-white/40 rounded-full animate-[shimmer_2s_infinite]" />
             </div>
-            <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.4em] animate-pulse">Building Dynamic Architecture</p>
+            <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.4em] animate-pulse">Finalizing Path Geometry</p>
           </div>
         </div>
+
+        <style dangerouslySetInnerHTML={{
+          __html: `
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+        }
+      `}} />
       </div>
     );
   }
@@ -435,7 +443,7 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider">Compass Calibration</h3>
               </div>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Think of this as a friendly design session with your AI roadmap architect. We use this data to weave a <span className="text-cyan-400 font-bold">personalized learning journey</span> that respects your existing expertise.
+                Think of this as a strategic design session with your roadmap architect. We use this data to weave a <span className="text-cyan-400 font-bold">personalized learning journey</span> that respects your existing expertise.
               </p>
             </div>
 

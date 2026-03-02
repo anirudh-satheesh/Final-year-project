@@ -128,7 +128,7 @@ const DashboardPage = () => {
           /* New User Onboarding Section */
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
             <div className="md:col-span-2 group cursor-pointer bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 p-10 rounded-[2.5rem] hover:border-blue-500/40 transition-all duration-500 shadow-2xl"
-              onClick={() => navigate('/')}>
+              onClick={() => navigate('/explore')}>
               <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center text-3xl mb-8 group-hover:scale-110 transition-transform">🧭</div>
               <h2 className="text-2xl font-bold text-white mb-4">Choose your first path</h2>
               <p className="text-zinc-400 text-lg leading-relaxed mb-8">Not sure where to start? Browse our curated subjects or take a quick assessment to generate a custom roadmap tailored to your goals.</p>
@@ -147,8 +147,8 @@ const DashboardPage = () => {
                 className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 p-8 rounded-[2.5rem] hover:border-indigo-500/40 transition-all duration-500 shadow-xl group cursor-pointer"
               >
                 <div className="text-3xl mb-6">🤖</div>
-                <h3 className="text-xl font-bold text-white mb-3">Expert System</h3>
-                <p className="text-zinc-500 text-sm leading-relaxed mb-6">Chat with our AI architecture to define your learning objectives and find the perfect starting point.</p>
+                <h3 className="text-xl font-bold text-white mb-3">System Architect</h3>
+                <p className="text-zinc-500 text-sm leading-relaxed mb-6">Consult with the core logic to define your learning objectives and find the perfect starting point.</p>
                 <button
                   className="text-[10px] font-black uppercase tracking-widest text-indigo-400 group-hover:text-indigo-300 transition-colors"
                 >
@@ -239,6 +239,9 @@ const DashboardPage = () => {
                 <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 p-8 rounded-3xl">
                   <h2 className="text-xl font-bold text-white tracking-tight mb-8">Skill Blueprint</h2>
                   <div className="space-y-6">
+                    <p className="text-zinc-500 text-sm leading-relaxed mb-4">
+                      Think of this as a strategic design session with your roadmap architect. We use this data to weave a <span className="text-cyan-400 font-bold">personalized learning journey</span> that respects your existing expertise.
+                    </p>
                     {skills.map((skill) => (
                       <div key={skill.name} className="space-y-2">
                         <div className="flex justify-between items-center">
