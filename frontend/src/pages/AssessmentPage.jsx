@@ -230,20 +230,26 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col relative font-sans selection:bg-white/10 overflow-x-hidden">
         <Background />
+        <Navbar />
 
-        <Navbar
-          rightContent={
+        {/* Global Progress Overlay for Assessment */}
+        <div className="sticky top-0 z-30 w-full bg-zinc-950/40 backdrop-blur-md border-b border-white/5 py-4 px-8 hidden lg:block">
+          <div className="max-w-[1600px] mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+              <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Diagnostic Progress</span>
+            </div>
             <div className="flex items-center gap-6">
               <div className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.25em]">{answeredCount} of {questions.length} Resolved</div>
-              <div className="w-32 h-1 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
+              <div className="w-64 h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-white/5">
                 <div
                   className="h-full bg-blue-500 transition-all duration-700 ease-out shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                   style={{ width: `${progress}%` }}
                 />
               </div>
             </div>
-          }
-        />
+          </div>
+        </div>
 
         <div className="flex-1 flex flex-col lg:flex-row w-full relative z-10">
           {/* Left Sidebar Panel - Stationary & Fixed */}
@@ -309,8 +315,8 @@ const AssessmentPage = ({ currentSubject, onComplete }) => {
                     key={qIndex}
                     id={`q-${qIndex}`}
                     className={`space-y-5 p-6 md:p-6 rounded-2xl bg-zinc-950/40 border transition-all duration-500 scroll-mt-32 ${markedForReview[qIndex]
-                        ? 'border-yellow-500/30 bg-yellow-500/5'
-                        : answers[qIndex] !== null ? 'border-zinc-800' : 'border-white/5'
+                      ? 'border-yellow-500/30 bg-yellow-500/5'
+                      : answers[qIndex] !== null ? 'border-zinc-800' : 'border-white/5'
                       }`}
                   >
                     <div className="flex justify-between items-start gap-6">
