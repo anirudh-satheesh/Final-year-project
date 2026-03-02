@@ -289,39 +289,35 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-zinc-950 flex flex-col overflow-hidden">
       <Navbar
-        rightContent={
-          <div className="flex gap-4">
-            <button
-              onClick={() => navigate('/assessment')}
-              className="px-6 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-lg 
-                       hover:bg-zinc-800 hover:border-zinc-700 hover:text-white transition-all font-medium text-sm"
-            >
-              📊 Reassess
-            </button>
-            <button
-              onClick={() => navigate('/')}
-              className="px-6 py-2.5 bg-white text-black rounded-lg 
-                       font-semibold hover:bg-zinc-200 transition-all shadow-sm text-sm active:scale-95"
-            >
-              ✨ New Path
-            </button>
-          </div>
-        }
+        menuItems={[
+          {
+            label: 'Reassess Skills',
+            icon: '📊',
+            onClick: () => navigate('/assessment'),
+            variant: 'secondary'
+          },
+          {
+            label: 'New Journey',
+            icon: '✨',
+            onClick: () => navigate('/'),
+            variant: 'primary'
+          }
+        ]}
       >
-        <div className="flex flex-col">
-          <h2 className="text-xl font-semibold text-white tracking-tight">
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] leading-none mb-1">Architectural Path</span>
+          <h2 className="text-sm font-bold text-white tracking-[0.15em] uppercase truncate max-w-xs">
             {currentSubject}
           </h2>
-          <p className="text-zinc-500 text-sm font-medium">Learning Journey</p>
         </div>
       </Navbar>
 
-      {/* Main Content */}
-      <div className="flex h-[calc(100vh-93px)]">
+      {/* Main Content Area - Full Screen for Graph */}
+      <main className="flex-1 relative w-full h-[calc(100vh-64px)] overflow-hidden">
         {/* Graph Visualization */}
-        <div className="flex-1 relative">
+        <div className="absolute inset-0 w-full h-full">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -370,8 +366,7 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
             </div>
           </div>
         </div>
-
-        {/* Node Detail Panel */}
+        {/* Node Detail Panel Overlay */}
         {selectedNode && (
           <NodeDetailPanel
             node={selectedNode}
@@ -380,9 +375,9 @@ const RoadmapPage = ({ roadmapData, userSkills, setUserSkills, currentSubject })
             onStartLesson={(topicId, lessonData) => navigate(`/lesson/${topicId}`, { state: { preloadedLesson: lessonData } })}
           />
         )}
-      </div>
+      </main>
 
-      {/* Custom Styles for React Flow with cool animations */}
+      {/* High-End Vector Node Styling */}
       <style>{`
         .react-flow__node {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
