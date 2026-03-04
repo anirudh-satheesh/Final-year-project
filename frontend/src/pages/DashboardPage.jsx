@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,43 +7,98 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const { user, loginWithGoogle } = useAuth();
 
-  // Simulated data - in a real app, these would come from a backend based on the user
-  const [userProgress] = useState({
-    totalTopics: 24,
-    completedTopics: 8,
-    currentStreak: 5,
-    totalHours: 42,
-    overallProgress: 33
+  const [learningPaths, setLearningPaths] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [userProgress, setUserProgress] = useState({
+    totalTopics: 0,
+    completedTopics: 0,
+    currentStreak: 0,
+    totalHours: 0,
+    overallProgress: 0
   });
+  const [recentActivity, setRecentActivity] = useState([]);
 
-  const [learningPaths] = useState([
-    {
-      id: 1,
-      title: 'Data Science Essentials',
-      progress: 75,
-      completedTopics: 12,
-      totalTopics: 16,
-      status: 'in-progress',
-      category: 'Data Science'
-    },
-    {
-      id: 2,
-      title: 'Web Design Systems',
-      progress: 100,
-      completedTopics: 8,
-      totalTopics: 8,
-      status: 'completed',
-      category: 'Design'
+  useEffect(() => {
+    if (!user) return;
+
+    // Load Journeys
+    const savedJourneys = localStorage.getItem('strive_journeys');
+    const journeys = savedJourneys ? JSON.parse(savedJourneys) : [];
+
+    // Load Completed Topics
+    const savedCompleted = localStorage.getItem('strive_completed_topics');
+    const completed = savedCompleted ? JSON.parse(savedCompleted) : [];
+
+    // Load Skills (Profile + Assessment)
+    const savedSkills = localStorage.getItem('strive_user_skills');
+    const userSkillsMap = savedSkills ? JSON.parse(savedSkills) : {};
+
+    // Get profile's skills for more comprehensive list
+    const profileData = localStorage.getItem(`strive_profile_${user.uid}`);
+    const profile = profileData ? JSON.parse(profileData) : null;
+
+    const combinedSkills = [];
+    // Add assessment skills
+    Object.entries(userSkillsMap).forEach(([name, level]) => {
+      combinedSkills.push({
+        name,
+        level,
+        label: level > 0.8 ? 'Expert' : level > 0.5 ? 'Advanced' : 'Intermediate'
+      });
+    });
+
+    // Add profile skills if not already there
+    if (profile?.skills) {
+      profile.skills.forEach(s => {
+        if (!userSkillsMap[s.name]) {
+          const level = s.level === 'Expert' ? 0.9 : s.level === 'Advanced' ? 0.7 : s.level === 'Intermediate' ? 0.5 : 0.3;
+          combinedSkills.push({ name: s.name, level, label: s.level });
+        }
+      });
     }
-  ]);
 
-  const [skills] = useState([
-    { name: 'Python', level: 0.8, label: 'Expert' },
-    { name: 'Machine Learning', level: 0.6, label: 'Advanced' },
-    { name: 'Data Analysis', level: 0.7, label: 'Advanced' },
-    { name: 'Statistics', level: 0.5, label: 'Intermediate' },
-    { name: 'SQL', level: 0.9, label: 'Expert' }
-  ]);
+    setSkills(combinedSkills.slice(0, 5));
+
+    // Enhancing journeys with progress info
+    const enhancedJourneys = journeys.map(j => {
+      // In a real app, we'd fetch the specific roadmap nodes count
+      // Here we'll simulate based on known data or fallback
+      return {
+        ...j,
+        progress: completed.length > 0 ? Math.min(Math.round((completed.length / 10) * 100), 100) : 0, // Placeholder calculation
+        completedTopics: Math.min(completed.length, 10),
+        totalTopics: 10,
+        category: 'Technical Path'
+      };
+    });
+
+    setLearningPaths(enhancedJourneys);
+
+    // Calculate Global Progress
+    setUserProgress({
+      totalTopics: enhancedJourneys.length * 10,
+      completedTopics: completed.length,
+      currentStreak: journeys.length > 0 ? 1 : 0, // Simplified streak
+      totalHours: completed.length * 1.5, // Est 1.5h per topic
+      overallProgress: enhancedJourneys.length > 0
+        ? Math.round(enhancedJourneys.reduce((acc, curr) => acc + curr.progress, 0) / enhancedJourneys.length)
+        : 0
+    });
+
+    // Set Recent Activity
+    if (completed.length > 0) {
+      const activities = [
+        { event: `Completed "${completed[completed.length - 1]}"`, time: 'Recently', type: 'emerald' }
+      ];
+      if (journeys.length > 0) {
+        activities.push({ event: `Started "${journeys[journeys.length - 1].title}"`, time: 'Recently', type: 'blue' });
+      }
+      setRecentActivity(activities);
+    } else {
+      setRecentActivity([]);
+    }
+
+  }, [user]);
 
   const getSkillColor = (level) => {
     if (level >= 0.8) return 'bg-emerald-500';
@@ -52,8 +107,7 @@ const DashboardPage = () => {
     return 'bg-rose-500';
   };
 
-  // State to simulate a "truly new" user vs one with data
-  const hasData = learningPaths.length > 0 && user?.metadata?.creationTime !== user?.metadata?.lastSignInTime;
+  const hasData = learningPaths.length > 0;
 
   if (!user) {
     return (
@@ -264,17 +318,17 @@ const DashboardPage = () => {
                   <h2 className="text-xl font-bold text-white tracking-tight mb-8">Recent Activity</h2>
                   <div className="space-y-8 relative">
                     <div className="absolute left-1 top-2 bottom-2 w-px bg-zinc-800" />
-                    {[
-                      { event: 'Completed "Neural Networks"', time: '2 hours ago', type: 'emerald' },
-                      { event: 'Started "Data Preprocessing"', time: '1 day ago', type: 'blue' },
-                      { event: 'Earned "Novice" badge', time: '3 days ago', type: 'indigo' }
-                    ].map((item, i) => (
+                    {recentActivity.length > 0 ? recentActivity.map((item, i) => (
                       <div key={i} className="relative pl-6">
                         <div className={`absolute left-0 top-1.5 w-2 h-2 rounded-full border-2 border-zinc-950 bg-${item.type}-500`} />
                         <p className="text-sm font-bold text-zinc-200">{item.event}</p>
                         <p className="text-xs font-medium text-zinc-500 mt-1 uppercase tracking-widest">{item.time}</p>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="relative pl-6">
+                        <p className="text-sm font-medium text-zinc-600 italic">No recent activity detected.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

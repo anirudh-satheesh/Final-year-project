@@ -46,8 +46,35 @@ const LessonPage = () => {
   };
 
   const handleMarkComplete = async () => {
+    // Record completion in localStorage
+    const savedCompleted = localStorage.getItem('strive_completed_topics');
+    const completed = savedCompleted ? JSON.parse(savedCompleted) : [];
+
+    if (!completed.includes(topicId)) {
+      completed.push(topicId);
+      localStorage.setItem('strive_completed_topics', JSON.stringify(completed));
+    }
+
+    // Update journey progress if possible
+    const savedJourneys = localStorage.getItem('strive_journeys');
+    if (savedJourneys) {
+      const journeys = JSON.parse(savedJourneys);
+      // This is a simple heuristic: find the journey that was last updated
+      // In a real app, we'd have a mapping from topic to journey
+      const currentRoadmap = localStorage.getItem('strive_current_roadmap');
+      if (currentRoadmap) {
+        const roadmap = JSON.parse(currentRoadmap);
+        // If the topic is in the current roadmap, update that journey
+        const journeyTitle = localStorage.getItem('strive_current_subject'); // I should probably set this in App.jsx
+        const journeyIdx = journeys.findIndex(j => j.title === journeyTitle);
+        if (journeyIdx >= 0) {
+          journeys[journeyIdx].lastUpdated = new Date().toISOString();
+          localStorage.setItem('strive_journeys', JSON.stringify(journeys));
+        }
+      }
+    }
+
     navigate('/roadmap');
-    // Here we could also update the user's progress in the backend
   };
 
   const handleCopyCode = (code, index) => {

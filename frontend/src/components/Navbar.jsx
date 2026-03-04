@@ -5,8 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 const Navbar = ({ children, rightContent, menuItems = [] }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, loginWithGoogle, logout } = useAuth();
-    const [showUserMenu, setShowUserMenu] = useState(false);
+    const { user, loginWithGoogle } = useAuth();
     const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
 
     return (
@@ -61,10 +60,7 @@ const Navbar = ({ children, rightContent, menuItems = [] }) => {
                         {user ? (
                             <div className="relative">
                                 <button
-                                    onClick={() => {
-                                        setShowUserMenu(!showUserMenu);
-                                        setShowHamburgerMenu(false);
-                                    }}
+                                    onClick={() => navigate('/profile')}
                                     className="w-10 h-10 rounded-full border border-white/10 overflow-hidden hover:border-blue-500/50 transition-all active:scale-95 flex items-center justify-center bg-zinc-900"
                                 >
                                     {user.photoURL ? (
@@ -75,24 +71,6 @@ const Navbar = ({ children, rightContent, menuItems = [] }) => {
                                         </div>
                                     )}
                                 </button>
-
-                                {showUserMenu && (
-                                    <div className="absolute right-0 mt-3 w-48 bg-zinc-900 border border-white/10 rounded-2xl p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 z-50">
-                                        <div className="px-4 py-2 border-b border-white/5 mb-1">
-                                            <p className="text-sm font-bold text-white truncate">{user.displayName}</p>
-                                            <p className="text-xs text-zinc-500 truncate">{user.email}</p>
-                                        </div>
-                                        <button
-                                            onClick={() => {
-                                                logout();
-                                                setShowUserMenu(false);
-                                            }}
-                                            className="w-full text-left px-4 py-2 text-sm font-bold text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
-                                        >
-                                            Sign Out
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         ) : (
                             <button
@@ -109,7 +87,6 @@ const Navbar = ({ children, rightContent, menuItems = [] }) => {
                         <button
                             onClick={() => {
                                 setShowHamburgerMenu(!showHamburgerMenu);
-                                setShowUserMenu(false);
                             }}
                             className={`p-2 rounded-xl border transition-all duration-300 ml-2 border-l border-white/10 h-10 w-10 flex items-center justify-center
                                 ${showHamburgerMenu ? 'bg-white text-black border-white' : 'text-zinc-500 hover:text-white border-transparent'}`}
@@ -139,6 +116,7 @@ const Navbar = ({ children, rightContent, menuItems = [] }) => {
                                     <button onClick={() => navigate('/')} className="w-full text-left px-4 py-3 text-xs font-bold text-zinc-400 hover:bg-white/5 hover:text-white rounded-xl transition-all uppercase tracking-widest">Home</button>
                                     <button onClick={() => navigate('/explore')} className="w-full text-left px-4 py-3 text-xs font-bold text-zinc-400 hover:bg-white/5 hover:text-white rounded-xl transition-all uppercase tracking-widest">Explore</button>
                                     <button onClick={() => navigate('/dashboard')} className="w-full text-left px-4 py-3 text-xs font-bold text-zinc-400 hover:bg-white/5 hover:text-white rounded-xl transition-all uppercase tracking-widest">Dashboard</button>
+                                    <button onClick={() => navigate('/profile')} className="w-full text-left px-4 py-3 text-xs font-bold text-zinc-400 hover:bg-white/5 hover:text-white rounded-xl transition-all uppercase tracking-widest">Profile</button>
                                 </div>
 
                                 {/* Dynamic Menu Items for specific pages */}

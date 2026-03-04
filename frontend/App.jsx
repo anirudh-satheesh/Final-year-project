@@ -7,16 +7,48 @@ import LessonPage from './src/pages/LessonPage';
 import DashboardPage from './src/pages/DashboardPage';
 import ChatPage from './src/pages/ChatPage';
 import ExplorePage from './src/pages/ExplorePage';
+import ProfilePage from './src/pages/ProfilePage';
 import { AuthProvider } from './src/contexts/AuthContext';
 
 function App() {
   const [currentSubject, setCurrentSubject] = useState('');
-  const [userSkills, setUserSkills] = useState({});
-  const [roadmapData, setRoadmapData] = useState(null);
+  const [userSkills, setUserSkills] = useState(() => {
+    const saved = localStorage.getItem('strive_user_skills');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [roadmapData, setRoadmapData] = useState(() => {
+    const saved = localStorage.getItem('strive_current_roadmap');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const handleAssessmentComplete = (skills, data) => {
-    setUserSkills(skills);
+    const newSkills = { ...userSkills, ...skills };
+    setUserSkills(newSkills);
     setRoadmapData(data);
+
+    // Store in localStorage
+    localStorage.setItem('strive_user_skills', JSON.stringify(newSkills));
+    localStorage.setItem('strive_current_roadmap', JSON.stringify(data));
+    localStorage.setItem('strive_current_subject', currentSubject);
+
+    // Track journeys for the dashboard
+    if (currentSubject) {
+      const savedJourneys = localStorage.getItem('strive_journeys');
+      const journeys = savedJourneys ? JSON.parse(savedJourneys) : [];
+      const existingIdx = journeys.findIndex(j => j.title === currentSubject);
+
+      const journey = {
+        id: existingIdx >= 0 ? journeys[existingIdx].id : Date.now(),
+        title: currentSubject,
+        status: 'in-progress',
+        lastUpdated: new Date().toISOString()
+      };
+
+      if (existingIdx >= 0) journeys[existingIdx] = journey;
+      else journeys.push(journey);
+
+      localStorage.setItem('strive_journeys', JSON.stringify(journeys));
+    }
   };
 
   return (
@@ -71,6 +103,7 @@ function App() {
             />
             <Route path="/lesson/:topicId" element={<LessonPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Routes>
         </div>
       </Router>
