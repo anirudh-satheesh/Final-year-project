@@ -19,9 +19,9 @@ const Navbar = ({ children, rightContent, menuItems = [] }) => {
                         onClick={() => navigate('/')}
                     >
                         <div className="w-8 h-8 bg-white rounded flex items-center justify-center font-bold text-black text-xl leading-none shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all">
-                            s.
+                            k.
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-white group-hover:text-blue-400 transition-colors">Strive</span>
+                        <span className="text-xl font-bold tracking-tight text-white group-hover:text-blue-400 transition-colors">Kaizen</span>
                     </div>
 
                     <div className="hidden lg:flex items-center gap-8">

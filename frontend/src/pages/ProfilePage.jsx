@@ -326,7 +326,7 @@ const ProfilePage = () => {
     // Load from localStorage on mount
     useEffect(() => {
         if (user) {
-            const saved = localStorage.getItem(`strive_profile_${user.uid}`);
+            const saved = localStorage.getItem(`kaizen_profile_${user.uid}`);
             if (saved) {
                 const parsed = JSON.parse(saved);
                 setProfile({ ...DEFAULT_PROFILE, ...parsed });
@@ -350,7 +350,7 @@ const ProfilePage = () => {
 
     const handleOnboardingComplete = () => {
         if (user) {
-            localStorage.setItem(`strive_profile_${user.uid}`, JSON.stringify(profile));
+            localStorage.setItem(`kaizen_profile_${user.uid}`, JSON.stringify(profile));
             setShowOnboarding(false);
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus(null), 2500);
@@ -359,7 +359,7 @@ const ProfilePage = () => {
 
     const handleSave = () => {
         if (user) {
-            localStorage.setItem(`strive_profile_${user.uid}`, JSON.stringify(profile));
+            localStorage.setItem(`kaizen_profile_${user.uid}`, JSON.stringify(profile));
             setSaveStatus('saved');
             setIsEditing(false);
             setTimeout(() => setSaveStatus(null), 2500);
@@ -413,7 +413,7 @@ const ProfilePage = () => {
                 <Navbar />
                 <main className="relative z-10 flex-grow flex items-center justify-center px-6">
                     <div className="max-w-md w-full bg-zinc-900/40 backdrop-blur-2xl border border-zinc-800/60 p-10 rounded-[2.5rem] text-center space-y-8 shadow-2xl">
-                        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center font-black text-black text-4xl mx-auto shadow-[0_0_50px_rgba(255,255,255,0.1)]">s.</div>
+                        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center font-black text-black text-4xl mx-auto shadow-[0_0_50px_rgba(255,255,255,0.1)]">k.</div>
                         <div className="space-y-3">
                             <h1 className="text-3xl font-bold tracking-tight text-white">Set up your profile.</h1>
                             <p className="text-zinc-500 text-lg leading-relaxed">Sign in to create and manage your learning profile.</p>
@@ -742,7 +742,7 @@ const ProfilePage = () => {
                     {renderOnboarding()}
                 </main>
                 <footer className="py-12 border-t border-zinc-900 relative z-10 text-center">
-                    <p className="text-xs font-black text-zinc-800 uppercase tracking-[0.4em]">Strive Learning Management System</p>
+                    <p className="text-xs font-black text-zinc-800 uppercase tracking-[0.4em]">Kaizen Learning Management System</p>
                 </footer>
             </div>
         );
@@ -796,7 +796,7 @@ const ProfilePage = () => {
                         {isEditing ? (
                             <>
                                 <button
-                                    onClick={() => { setIsEditing(false); if (user) { const s = localStorage.getItem(`strive_profile_${user.uid}`); if (s) setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(s) }); } }}
+                                    onClick={() => { setIsEditing(false); if (user) { const s = localStorage.getItem(`kaizen_profile_${user.uid}`); if (s) setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(s) }); } }}
                                     className="px-3.5 py-1.5 text-[13px] text-zinc-500 hover:text-white transition-colors rounded-md"
                                 >
                                     Cancel

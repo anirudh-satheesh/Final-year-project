@@ -118,7 +118,7 @@ const HomePage = ({ currentSubject, setCurrentSubject }) => {
             <h2 className="text-4xl font-semibold tracking-tight text-white">Focus on the path, <br /><span className="text-zinc-500">not the noise.</span></h2>
             <div className="space-y-8 text-zinc-400 text-lg leading-relaxed max-w-2xl mx-auto font-medium">
               <p>
-                Strive is a personalized learning architect designed to solve the "Paradox of Choice." In an era of infinite tutorials, we help you find the one sequence that actually works for your brain.
+                Kaizen is a personalized learning architect designed to solve the "Paradox of Choice." In an era of infinite tutorials, we help you find the one sequence that actually works for your brain.
               </p>
               <p>
                 By mapping your existing knowledge and connecting concepts logically, we turn overwhelming subjects into clear, manageable roadmaps. Honest, efficient, and built for people who just want to learn.
@@ -147,9 +147,9 @@ const HomePage = ({ currentSubject, setCurrentSubject }) => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-zinc-500">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-center">
-              <span className="text-zinc-100 font-semibold text-lg italic">S</span>
+              <span className="text-zinc-100 font-semibold text-lg italic">K</span>
             </div>
-            <span className="text-base font-medium tracking-tight">Strive AI - Built to help you learn</span>
+            <span className="text-base font-medium tracking-tight">Kaizen AI - Built to help you learn</span>
           </div>
 
           <div className="text-sm font-medium tracking-wider">

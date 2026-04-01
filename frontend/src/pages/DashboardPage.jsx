@@ -22,19 +22,19 @@ const DashboardPage = () => {
     if (!user) return;
 
     // Load Journeys
-    const savedJourneys = localStorage.getItem('strive_journeys');
+    const savedJourneys = localStorage.getItem('kaizen_journeys');
     const journeys = savedJourneys ? JSON.parse(savedJourneys) : [];
 
     // Load Completed Topics
-    const savedCompleted = localStorage.getItem('strive_completed_topics');
+    const savedCompleted = localStorage.getItem('kaizen_completed_topics');
     const completed = savedCompleted ? JSON.parse(savedCompleted) : [];
 
     // Load Skills (Profile + Assessment)
-    const savedSkills = localStorage.getItem('strive_user_skills');
+    const savedSkills = localStorage.getItem('kaizen_user_skills');
     const userSkillsMap = savedSkills ? JSON.parse(savedSkills) : {};
 
     // Get profile's skills for more comprehensive list
-    const profileData = localStorage.getItem(`strive_profile_${user.uid}`);
+    const profileData = localStorage.getItem(`kaizen_profile_${user.uid}`);
     const profile = profileData ? JSON.parse(profileData) : null;
 
     const combinedSkills = [];
@@ -120,7 +120,7 @@ const DashboardPage = () => {
         <main className="relative z-10 flex-grow flex items-center justify-center px-6">
           <div className="max-w-md w-full bg-zinc-900/40 backdrop-blur-2xl border border-zinc-800/60 p-10 rounded-[2.5rem] text-center space-y-8 shadow-2xl">
             <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center font-black text-black text-4xl mx-auto shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-              s.
+              k.
             </div>
             <div className="space-y-3">
               <h1 className="text-3xl font-bold tracking-tight text-white">Your journey awaits.</h1>
@@ -213,7 +213,7 @@ const DashboardPage = () => {
               <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 p-8 rounded-[2.5rem] hover:border-emerald-500/40 transition-all duration-500 shadow-xl group cursor-pointer">
                 <div className="text-3xl mb-6">🎓</div>
                 <h3 className="text-xl font-bold text-white mb-3">Quick Tour</h3>
-                <p className="text-zinc-500 text-sm leading-relaxed mb-6">A 2-minute walkthrough of how Strive maps your knowledge to save you hundreds of study hours.</p>
+                <p className="text-zinc-500 text-sm leading-relaxed mb-6">A 2-minute walkthrough of how Kaizen maps your knowledge to save you hundreds of study hours.</p>
                 <button className="text-[10px] font-black uppercase tracking-widest text-emerald-400 group-hover:text-emerald-300 transition-colors">Start Tour</button>
               </div>
             </div>
@@ -339,7 +339,7 @@ const DashboardPage = () => {
 
       {/* Footer Branding */}
       <footer className="py-12 border-t border-zinc-900 relative z-10 text-center">
-        <p className="text-xs font-black text-zinc-800 uppercase tracking-[0.4em]">Strive Learning Management System</p>
+        <p className="text-xs font-black text-zinc-800 uppercase tracking-[0.4em]">Kaizen Learning Management System</p>
       </footer>
     </div>
   );

@@ -13,11 +13,11 @@ import { AuthProvider } from './src/contexts/AuthContext';
 function App() {
   const [currentSubject, setCurrentSubject] = useState('');
   const [userSkills, setUserSkills] = useState(() => {
-    const saved = localStorage.getItem('strive_user_skills');
+    const saved = localStorage.getItem('kaizen_user_skills');
     return saved ? JSON.parse(saved) : {};
   });
   const [roadmapData, setRoadmapData] = useState(() => {
-    const saved = localStorage.getItem('strive_current_roadmap');
+    const saved = localStorage.getItem('kaizen_current_roadmap');
     return saved ? JSON.parse(saved) : null;
   });
 
@@ -27,13 +27,13 @@ function App() {
     setRoadmapData(data);
 
     // Store in localStorage
-    localStorage.setItem('strive_user_skills', JSON.stringify(newSkills));
-    localStorage.setItem('strive_current_roadmap', JSON.stringify(data));
-    localStorage.setItem('strive_current_subject', currentSubject);
+    localStorage.setItem('kaizen_user_skills', JSON.stringify(newSkills));
+    localStorage.setItem('kaizen_current_roadmap', JSON.stringify(data));
+    localStorage.setItem('kaizen_current_subject', currentSubject);
 
     // Track journeys for the dashboard
     if (currentSubject) {
-      const savedJourneys = localStorage.getItem('strive_journeys');
+      const savedJourneys = localStorage.getItem('kaizen_journeys');
       const journeys = savedJourneys ? JSON.parse(savedJourneys) : [];
       const existingIdx = journeys.findIndex(j => j.title === currentSubject);
 
@@ -47,7 +47,7 @@ function App() {
       if (existingIdx >= 0) journeys[existingIdx] = journey;
       else journeys.push(journey);
 
-      localStorage.setItem('strive_journeys', JSON.stringify(journeys));
+      localStorage.setItem('kaizen_journeys', JSON.stringify(journeys));
     }
   };
 

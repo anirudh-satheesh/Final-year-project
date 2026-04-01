@@ -85,7 +85,7 @@ const LoadingComponent = ({ onCancel }) => {
 
         {/* Global Footer Identifier */}
         <div className="mt-24 opacity-30">
-          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.5em]">STRIVE CORE</span>
+          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.5em]">KAIZEN CORE</span>
         </div>
       </div>
 

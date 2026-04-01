@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 
 const TopicAssistant = ({ onTopicFinalized }) => {
     const [history, setHistory] = useState([
-        { role: 'assistant', content: 'Hi! I\'m your Strive Learning Path Architect. What skill or topic do you want to master today?' }
+        { role: 'assistant', content: 'Hi! I\'m your Kaizen Learning Path Architect. What skill or topic do you want to master today?' }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
